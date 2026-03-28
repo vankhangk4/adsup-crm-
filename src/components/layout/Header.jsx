@@ -37,16 +37,15 @@ export default function Header({ activeModule, onToggleSidebar, sidebarCollapsed
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-20">
       {/* Left: Toggle + Breadcrumb */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors lg:hidden"
+          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+          aria-label="Toggle menu"
         >
-          <div className="w-5 h-4 flex flex-col justify-between">
-            <span className={`block h-0.5 bg-slate-600 rounded transition-all ${sidebarCollapsed ? 'w-5' : 'w-5'}`} />
-            <span className={`block h-0.5 bg-slate-600 rounded transition-all ${sidebarCollapsed ? 'w-3' : 'w-5'}`} />
-            <span className={`block h-0.5 bg-slate-600 rounded transition-all ${sidebarCollapsed ? 'w-5' : 'w-5'}`} />
-          </div>
+          <svg width="20" height="16" viewBox="0 0 20 16" fill="none" className="text-slate-600">
+            <path d="M1 1h18M1 8h18M1 15h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
         </button>
 
         <div className="flex items-center gap-2">

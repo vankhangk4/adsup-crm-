@@ -52,20 +52,20 @@ const stats = [
 
 export default function TeleDashboard() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
       {stats.map((stat) => {
         const Icon = stat.icon
         return (
           <div key={stat.id} className="card p-4">
             <div className="flex items-start justify-between mb-3">
               <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: stat.bg }}
               >
                 <Icon size={20} style={{ color: stat.color }} />
               </div>
             </div>
-            <div className="flex items-baseline gap-1 mb-1">
+            <div className="flex flex-wrap items-baseline gap-1 mb-1">
               <span className="text-2xl font-bold text-slate-800">{stat.value}</span>
               <span className="text-sm text-slate-500">{stat.sub}</span>
             </div>

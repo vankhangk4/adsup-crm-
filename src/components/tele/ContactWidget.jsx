@@ -200,7 +200,7 @@ export default function ContactWidget() {
       <button
         id="contact-fab"
         onClick={() => setShowContact(!showContact)}
-        className="flex flex-col items-center gap-3 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-lg shadow-slate-200/60 p-3 hover:shadow-xl transition-shadow"
+        className="flex flex-col items-center gap-2 md:gap-3 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-lg shadow-slate-200/60 p-2.5 md:p-3 hover:shadow-xl transition-shadow"
       >
         {/* Zalo */}
         <a
@@ -209,9 +209,9 @@ export default function ContactWidget() {
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
           title="Liên hệ Zalo"
-          className="w-12 h-12 rounded-xl bg-[#0068FF] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
+          className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#0068FF] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
         >
-          <svg width="28" height="28" viewBox="0 0 60 60" fill="none">
+          <svg width="24" height="24" viewBox="0 0 60 60" fill="none" className="md:w-7 md:h-7">
             <rect width="60" height="60" rx="12" fill="#0068FF"/>
             <path d="M30 8C17.85 8 8 15.6 8 25.2C8 31.5 12.15 37.2 18 40.2V46L23.4 42.9C26.25 44.1 29.55 44.7 30 44.7C42.15 44.7 52 37.1 52 27.5C52 18 42.15 8 30 8Z" fill="white"/>
             <path d="M18 29C19.65 29 21 27.65 21 26C21 24.35 19.65 23 18 23C16.35 23 15 24.35 15 26C15 27.65 16.35 29 18 29Z" fill="#0068FF"/>
@@ -227,9 +227,9 @@ export default function ContactWidget() {
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
           title="Liên hệ Messenger"
-          className="w-12 h-12 rounded-xl bg-[#0084FF] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
+          className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#0084FF] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
         >
-          <svg width="28" height="28" viewBox="0 0 60 60" fill="none">
+          <svg width="24" height="24" viewBox="0 0 60 60" fill="none" className="md:w-7 md:h-7">
             <path d="M30 60C46.5685 60 60 48.2843 60 34C60 19.7157 46.5685 8 30 8C13.4315 8 0 19.7157 0 34C0 42.72 4.56 50.52 11.4 55.56L9 64L19.2 58.08C22.8 58.8 26.4 59.28 30 59.28C30 59.52 30 59.76 30 60Z" fill="#0084FF"/>
             <path d="M23.4 39L17.4 30L38.4 23.4L22.8 35.4L28.2 40.2L23.4 39Z" fill="white"/>
             <path d="M42 23.4L22.8 39L26.4 35.4L40.8 22.2L42 23.4Z" fill="#E5F0FF"/>
@@ -237,7 +237,7 @@ export default function ContactWidget() {
           </svg>
         </a>
 
-        <div className="text-[9px] text-slate-500 font-medium text-center leading-tight mt-0.5">
+        <div className="hidden md:block text-[9px] text-slate-500 font-medium text-center leading-tight">
           Zalo &<br/>Messenger
         </div>
       </button>

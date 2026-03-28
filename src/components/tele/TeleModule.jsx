@@ -1,33 +1,62 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import TeleDashboard from './TeleDashboard'
 import TeleLeadList from './TeleLeadList'
 import TeleLeadDetail from './TeleLeadDetail'
 import TeleScripts from './TeleScripts'
 import TeleCalendar from './TeleCalendar'
-import {
-  Phone,
-  LayoutList,
-  Calendar,
-  FileText,
-} from 'lucide-react'
+import { Phone, LayoutList, Calendar, FileText } from 'lucide-react'
+import { teleLeads } from '../../data/mockData'
 import clsx from 'clsx'
+
+// Quick filter tab definitions
+const QUICK_FILTERS = [
+  { id: 'all', label: 'Tất cả', color: '#3b82f6' },
+  { id: 'new', label: 'Khách mới', color: '#8b5cf6' },
+  { id: 'due_today', label: 'Đến hạn Follow-up', color: '#10b981' },
+  { id: 'overdue', label: 'Quá hạn', color: '#ef4444' },
+]
+
+function useQuickFilterCounts() {
+  return useMemo(() => {
+    const now = new Date()
+    const todayStr = now.toDateString()
+    return {
+      all: teleLeads.length,
+      new: teleLeads.filter((l) => l.leadStatusId === 'ls_01' || l.callCount === 0).length,
+      due_today: teleLeads.filter((l) => {
+        if (l.appointmentAt && new Date(l.appointmentAt).toDateString() === todayStr) return true
+        if (l.followUps?.some((f) => f.status !== 'done' && new Date(f.scheduledAt).toDateString() === todayStr)) return true
+        return false
+      }).length,
+      overdue: teleLeads.filter((l) => {
+        if (l.appointmentAt && new Date(l.appointmentAt) < now) return true
+        if (l.followUps?.some((f) => f.status === 'pending' && new Date(f.scheduledAt) < now)) return true
+        return false
+      }).length,
+    }
+  }, [])
+}
 
 export default function TeleModule() {
   const [selectedLead, setSelectedLead] = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
-  const [view, setView] = useState('list') // 'list' | 'calendar' | 'scripts'
+  const [view, setView] = useState('list')
   const [refreshKey, setRefreshKey] = useState(0)
+  const [quickFilter, setQuickFilter] = useState('all')
+  const counts = useQuickFilterCounts()
 
-  const handleSelectLead = (lead) => {
-    setSelectedLead(lead)
+  const handleSelectLead = (lead) => setSelectedLead(lead)
+  const handleCloseDetail = () => setSelectedLead(null)
+  const handleSave = () => setRefreshKey((k) => k + 1)
+
+  const handleCall = (leadId, phoneNumber) => {
+    console.log(`[CALL] leadId=${leadId}, phone=${phoneNumber}`)
+    alert(`Đang gọi: ${phoneNumber}`)
   }
 
-  const handleCloseDetail = () => {
-    setSelectedLead(null)
-  }
-
-  const handleSave = () => {
-    setRefreshKey((k) => k + 1)
+  const handleDashboardFilter = (filterKey) => {
+    setQuickFilter(filterKey)
+    if (view !== 'list') setView('list')
   }
 
   const viewTabs = [
@@ -38,32 +67,68 @@ export default function TeleModule() {
 
   return (
     <div className="relative h-full flex flex-col gap-3 md:gap-4">
-      {/* Dashboard Stats */}
-      <TeleDashboard />
+      {/* Dashboard Stats — always visible, clickable */}
+      <TeleDashboard onFilterClick={handleDashboardFilter} activeFilter={quickFilter} />
 
-      {/* View Toggle — scroll ngang trên mobile */}
-      <div className="w-full overflow-x-auto pb-1 -mx-1 px-1">
-        <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-slate-200 w-fit min-w-max">
-          {viewTabs.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setView(tab.id)}
-                className={clsx(
-                  'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap',
-                  view === tab.id
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
-                )}
-              >
-                <Icon size={15} />
-                {tab.label}
-              </button>
-            )
-          })}
-        </div>
+      {/* View Toggle */}
+      <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-slate-200 w-fit min-w-max">
+        {viewTabs.map((tab) => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setView(tab.id)}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap',
+                view === tab.id
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100'
+              )}
+            >
+              <Icon size={15} />
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
+
+      {/* Quick Filter Tabs — only in Danh sách Lead view */}
+      {view === 'list' && (
+        <div className="px-1">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {QUICK_FILTERS.map((f) => {
+              const count = counts[f.id] || 0
+              const isActive = quickFilter === f.id || (f.id === 'all' && !quickFilter)
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setQuickFilter(f.id)}
+                  className={clsx(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
+                    isActive
+                      ? 'text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  )}
+                  style={isActive ? { backgroundColor: f.color } : {}}
+                >
+                  {f.id === 'overdue' && count > 0 && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  )}
+                  {f.label}
+                  <span
+                    className={clsx(
+                      'ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[20px]',
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       {view === 'list' && (
@@ -76,6 +141,8 @@ export default function TeleModule() {
               selectedLeadId={selectedLead?.leadId}
               filterStatus={filterStatus}
               setFilterStatus={setFilterStatus}
+              quickFilter={quickFilter}
+              onCall={handleCall}
             />
           </div>
 
@@ -89,7 +156,7 @@ export default function TeleModule() {
             />
           </div>
 
-          {/* Empty state when no lead selected on desktop */}
+          {/* Empty state */}
           {!selectedLead && (
             <div className="hidden xl:flex xl:col-span-2 items-start">
               <div className="card w-full flex items-center justify-center py-12 md:py-16">
@@ -106,9 +173,16 @@ export default function TeleModule() {
         </div>
       )}
 
-      {view === 'calendar' && <TeleCalendar />}
-
-      {view === 'scripts' && <TeleScripts />}
+      {view === 'calendar' && (
+        <div className="flex-1 min-h-0">
+          <TeleCalendar />
+        </div>
+      )}
+      {view === 'scripts' && (
+        <div className="flex-1 min-h-0">
+          <TeleScripts />
+        </div>
+      )}
     </div>
   )
 }

@@ -10,6 +10,7 @@ import SearchInput from '../common/SearchInput';
 const PAGE_TITLES = {
   '/': 'Bảng điều khiển',
   '/leads': 'Quản lý Lead',
+  '/tele': 'Telemarketing',
   '/routing': 'Routing',
   '/services': 'Dịch vụ',
   '/chat': 'Chat đa kênh',

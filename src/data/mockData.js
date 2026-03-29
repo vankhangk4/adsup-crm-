@@ -234,6 +234,7 @@ export const sidebarMenu = [
     group: 'Quản lý',
     items: [
       { id: 'leads', label: 'Quản lý Lead', icon: 'Users', path: '/leads' },
+      { id: 'tele', label: 'Telemarketing', icon: 'Phone', path: '/tele' },
       { id: 'routing', label: 'Routing', icon: 'GitBranch', path: '/routing' },
       { id: 'services', label: 'Dịch vụ', icon: 'Box', path: '/services' },
     ],

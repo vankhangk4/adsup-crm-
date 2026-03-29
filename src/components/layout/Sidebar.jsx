@@ -13,6 +13,7 @@ import {
   Building2,
   UserCog,
   Shield,
+  Phone,
   ChevronDown,
   ChevronRight,
   Bell,
@@ -32,6 +33,7 @@ const ICON_MAP = {
   Building2,
   UserCog,
   Shield,
+  Phone,
 };
 
 export default function Sidebar({ isMobileOpen, onMobileClose }) {

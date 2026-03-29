@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import RootLayout from './components/layout/RootLayout';
+import TeleModule from './components/tele/TeleModule';
 import './index.css';
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/permissions" element={<PermissionsPage />} />
+          <Route path="/tele" element={<TeleModule />} />
         </Route>
       </Routes>
     </BrowserRouter>

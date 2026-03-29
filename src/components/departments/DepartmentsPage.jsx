@@ -3,14 +3,13 @@
  * Route: /departments
  * Bố cục: Grid cards cho từng phòng ban
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Edit2,
   Trash2,
   Users,
   UserCheck,
-  MoreHorizontal,
   Building2,
   Headphones,
   Megaphone,
@@ -18,9 +17,10 @@ import {
   Briefcase,
   Heart,
   FileText,
+  Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
-import { departmentsData } from '../../data/mockDepartmentData';
+import { CardGridSkeleton } from '../common/SkeletonLoader';
 
 // ===== SUB-COMPONENTS =====
 
@@ -38,8 +38,8 @@ const DEPT_ICONS = {
 function DepartmentCard({ dept }) {
   const Icon = DEPT_ICONS[dept.shortName] || Building2;
   const MAX_AVATARS = 5;
-  const displayMembers = dept.members.slice(0, MAX_AVATARS);
-  const remaining = dept.memberCount - MAX_AVATARS;
+  const displayMembers = (dept.members || []).slice(0, MAX_AVATARS);
+  const remaining = (dept.memberCount || 0) - MAX_AVATARS;
 
   const statusColors = {
     online: 'bg-green-500',
@@ -52,8 +52,8 @@ function DepartmentCard({ dept }) {
     offline: 'Offline',
   };
 
-  const onlineCount = dept.members.filter((m) => m.status === 'online').length;
-  const busyCount = dept.members.filter((m) => m.status === 'busy').length;
+  const onlineCount = (dept.members || []).filter((m) => m.status === 'online').length;
+  const busyCount = (dept.members || []).filter((m) => m.status === 'busy').length;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:border-blue-200 hover:shadow-md transition-all duration-200 group">
@@ -153,18 +153,61 @@ function DepartmentCard({ dept }) {
   );
 }
 
+// ===== EMPTY STATE =====
+function EmptyState({ isSearching }) {
+  if (isSearching) {
+    return (
+      <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+        <Building2 size={40} className="text-gray-300 mb-3" />
+        <p className="text-sm font-medium text-gray-500">Không tìm thấy phòng ban nào</p>
+        <p className="text-xs text-gray-400 mt-1">Thử tìm kiếm với từ khóa khác</p>
+      </div>
+    );
+  }
+  return (
+    <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+      <Inbox size={40} className="text-gray-300 mb-3" />
+      <p className="text-sm font-medium text-gray-500">Chưa có dữ liệu</p>
+      <p className="text-xs text-gray-400 mt-1">Danh sách phòng ban hiện đang trống</p>
+    </div>
+  );
+}
+
 // ===== MAIN COMPONENT =====
 
 export default function DepartmentsPage() {
-  const [departments] = useState(departmentsData);
+  const [departments, setDepartments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Example: fetch('/api/departments?include=members,stats')
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      // const response = await fetch('/api/departments?include=members,stats');
+      // if (!response.ok) throw new Error('Failed to fetch departments');
+      // const data = await response.json();
+      // setDepartments(data);
+      setDepartments([]);
+    } catch (err) {
+      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const filteredDepts = departments.filter((d) =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (d.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalMembers = departments.reduce((sum, d) => sum + d.memberCount, 0);
-  const totalLeads = departments.reduce((sum, d) => sum + d.leads, 0);
+  const totalMembers = departments.reduce((sum, d) => sum + (d.memberCount || 0), 0);
+  const totalLeads = departments.reduce((sum, d) => sum + (d.leads || 0), 0);
   const activeDepts = departments.filter((d) => d.active).length;
 
   return (
@@ -224,15 +267,25 @@ export default function DepartmentsPage() {
 
       {/* Department Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredDepts.map((dept) => (
+        {isLoading && <CardGridSkeleton count={6} height="h-28" />}
+
+        {!isLoading && !error && filteredDepts.length > 0 && filteredDepts.map((dept) => (
           <DepartmentCard key={dept.id} dept={dept} />
         ))}
 
-        {filteredDepts.length === 0 && (
+        {!isLoading && !error && filteredDepts.length === 0 && (
+          <EmptyState isSearching={searchQuery.length > 0} />
+        )}
+
+        {!isLoading && error && (
           <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-            <Building2 size={40} className="text-gray-300 mb-3" />
-            <p className="text-sm font-medium text-gray-500">Không tìm thấy phòng ban nào</p>
-            <p className="text-xs text-gray-400 mt-1">Thử tìm kiếm với từ khóa khác</p>
+            <p className="text-sm font-medium text-red-500">{error}</p>
+            <button
+              onClick={fetchData}
+              className="mt-3 text-xs text-blue-500 hover:text-blue-600 underline"
+            >
+              Thử lại
+            </button>
           </div>
         )}
       </div>

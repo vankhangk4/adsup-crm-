@@ -2,7 +2,7 @@
  * ChannelsModule - Trang Quản lý Nguồn Chat đa kênh
  * Bố cục: Top Cards + Bảng quản lý + Modal phân công nhân viên
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -19,73 +19,70 @@ import {
   WifiOff,
   MessageSquare,
   Users,
+  Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
 
-// ===== MOCK DATA =====
+// ===== EMPTY STATE COMPONENT =====
 
-const channelsInit = [
-  {
-    id: 1,
-    name: 'Trang Facebook',
-    platform: 'facebook',
-    iconBg: 'bg-blue-500',
-    nickCount: 2,
-    status: true,
-    groups: ['Marketing', 'Kinh doanh'],
-    staff: [
-      { id: 1, name: 'Nguyễn Thu Hà', avatar: 'NH', role: 'Page Staff', status: 'online' },
-      { id: 2, name: 'Lê Minh Tuấn', avatar: 'LT', role: 'Page Staff', status: 'online' },
-    ],
-    pageList: [
-      { id: 'FB001', name: 'FPT Telecom Chính thức', platform: 'facebook', group: 'Marketing', staffCount: 2, expanded: true },
-      { id: 'FB002', name: 'FPT Internet Việt Nam', platform: 'facebook', group: 'Kinh doanh', staffCount: 1, expanded: false },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Kênh Zalo',
-    platform: 'zalo',
-    iconBg: 'bg-blue-400',
-    nickCount: 1,
-    status: true,
-    groups: ['Kinh doanh'],
-    staff: [
-      { id: 3, name: 'Trần Văn Đạt', avatar: 'TD', role: 'Page Staff', status: 'busy' },
-    ],
-    pageList: [
-      { id: 'ZL001', name: 'FPT Telecom Zalo OA', platform: 'zalo', group: 'Kinh doanh', staffCount: 1, expanded: false },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Instagram',
-    platform: 'instagram',
-    iconBg: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400',
-    nickCount: 0,
-    status: false,
-    groups: [],
-    staff: [],
-    pageList: [],
-  },
-];
+function EmptyState({ message = 'Chưa có dữ liệu' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+        <Inbox size={28} className="text-gray-300" />
+      </div>
+      <p className="text-sm font-medium text-gray-500">{message}</p>
+    </div>
+  );
+}
 
-const rolesList = [
-  { id: 'page_staff', name: 'Page Staff', desc: 'Nhân viên phụ trách page' },
-  { id: 'page_admin', name: 'Page Admin', desc: 'Quản trị viên page' },
-  { id: 'page_manager', name: 'Page Manager', desc: 'Người quản lý page' },
-];
+// ===== LOADING SKELETON =====
 
-const allStaffOptions = [
-  { id: 1, name: 'Nguyễn Thu Hà', avatar: 'NH' },
-  { id: 2, name: 'Lê Minh Tuấn', avatar: 'LT' },
-  { id: 3, name: 'Trần Văn Đạt', avatar: 'TD' },
-  { id: 4, name: 'Phạm Thị Mai', avatar: 'PM' },
-  { id: 5, name: 'Hoàng Văn Bảo', avatar: 'HB' },
-  { id: 6, name: 'Vũ Minh Đức', avatar: 'VD' },
-  { id: 7, name: 'Đặng Thu Hà', avatar: 'DH' },
-  { id: 8, name: 'Bùi Thị Lan', avatar: 'BL' },
-];
+function LoadingSkeleton() {
+  return (
+    <>
+      {[1, 2, 3].map((i) => (
+        <tr key={i} className="border-b border-gray-50">
+          <td className="px-4 py-3">
+            <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="w-16 h-3 bg-gray-200 rounded animate-pulse" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-gray-200 rounded animate-pulse" />
+              <div className="w-40 h-3 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </td>
+          <td className="px-3 py-3">
+            <div className="w-16 h-5 bg-gray-200 rounded-lg animate-pulse" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="w-20 h-5 bg-gray-200 rounded-lg animate-pulse" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="flex items-center gap-1">
+              <div className="flex -space-x-1.5">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="w-6 h-6 bg-gray-200 rounded-full animate-pulse" />
+                ))}
+              </div>
+              <div className="w-8 h-3 bg-gray-200 rounded animate-pulse ml-1" />
+            </div>
+          </td>
+          <td className="px-3 py-3">
+            <div className="flex items-center justify-center gap-1">
+              <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+              <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+              <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
 
 // ===== SUB-COMPONENTS =====
 
@@ -184,7 +181,7 @@ function StaffPill({ staff, onRemove, compact = false }) {
 
 function AssignModal({ isOpen, onClose, page, roles, staffOptions }) {
   const [selectedRole, setSelectedRole] = useState('page_staff');
-  const [selectedStaff, setSelectedStaff] = useState(page?.staff || []);
+  const [selectedStaff, setSelectedStaff] = useState([]);
   const [selectedName, setSelectedName] = useState('');
 
   if (!isOpen) return null;
@@ -212,10 +209,10 @@ function AssignModal({ isOpen, onClose, page, roles, staffOptions }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-[680px] max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-[680px] max-h-[85vh] flex flex-col overflow-hidden animate-modal-in">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-3">
@@ -349,7 +346,7 @@ function AssignModal({ isOpen, onClose, page, roles, staffOptions }) {
 }
 
 function ExpandedRow({ page }) {
-  const [expanded, setExpanded] = useState(page.expanded);
+  const [expanded, setExpanded] = useState(page.expanded || false);
 
   return (
     <>
@@ -373,54 +370,14 @@ function ExpandedRow({ page }) {
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
                 Nick kết nối với {page.name}
               </p>
-              {page.id === 'FB001' && (
-                <>
-                  <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center">
-                      <span className="text-white text-[9px] font-bold">NH</span>
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">Consultant A</span>
-                    <span className="ml-auto text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      Online
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-400 flex items-center justify-center">
-                      <span className="text-white text-[9px] font-bold">LT</span>
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">Consultant B</span>
-                    <span className="ml-auto text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      Online
-                    </span>
-                  </div>
-                </>
-              )}
-              {page.id === 'FB002' && (
-                <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2">
-                  <div className="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center">
-                    <span className="text-white text-[9px] font-bold">PM</span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">Consultant C</span>
-                  <span className="ml-auto text-[10px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                    Offline
-                  </span>
+              {/* Placeholder: Replace with actual nick data fetched from API */}
+              {/* Example: page.nicks?.map(nick => ()) */}
+              <div className="flex flex-col items-center justify-center py-4">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-2">
+                  <MessageSquare size={18} className="text-gray-300" />
                 </div>
-              )}
-              {page.id === 'ZL001' && (
-                <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2">
-                  <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center">
-                    <span className="text-white text-[9px] font-bold">TD</span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">Consultant Zalo</span>
-                  <span className="ml-auto text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    Bận
-                  </span>
-                </div>
-              )}
+                <p className="text-xs text-gray-400">Chưa có Nick nào được kết nối</p>
+              </div>
             </div>
           </td>
         </tr>
@@ -432,16 +389,67 @@ function ExpandedRow({ page }) {
 // ===== MAIN COMPONENT =====
 
 export default function ChannelsModule() {
-  const [channels] = useState(channelsInit);
-  const [activeChannel, setActiveChannel] = useState(channelsInit[0]);
+  // Data states - initialized empty, populated via useEffect
+  const [channels, setChannels] = useState([]);
+  const [rolesList, setRolesList] = useState([]);
+  const [allStaffOptions, setAllStaffOptions] = useState([]);
+  const [activeChannel, setActiveChannel] = useState(null);
   const [expandedPages, setExpandedPages] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activePage, setActivePage] = useState(null);
 
+  // Loading and error states
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // ===== FETCH DATA =====
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Example: fetch('/api/channels')
+        // const channelsRes = await fetch('/api/channels');
+        // if (!channelsRes.ok) throw new Error('Failed to fetch channels');
+        // const channelsData = await channelsRes.json();
+
+        // Example: fetch('/api/roles')
+        // const rolesRes = await fetch('/api/roles');
+        // if (!rolesRes.ok) throw new Error('Failed to fetch roles');
+        // const rolesData = await rolesRes.json();
+
+        // Example: fetch('/api/staff')
+        // const staffRes = await fetch('/api/staff');
+        // if (!staffRes.ok) throw new Error('Failed to fetch staff');
+        // const staffData = await staffRes.json();
+
+        // Placeholder data - replace with API calls above
+        // setChannels(channelsData);
+        // setRolesList(rolesData);
+        // setAllStaffOptions(staffData);
+        // setActiveChannel(channelsData[0] || null);
+
+        // Temporary: clear placeholder data
+        setChannels([]);
+        setRolesList([]);
+        setAllStaffOptions([]);
+        setActiveChannel(null);
+      } catch (err) {
+        setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+        console.error('ChannelsModule fetch error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   // Flatten pages from active channel
-  const pageList = activeChannel.pageList;
+  const pageList = activeChannel?.pageList || [];
 
   const toggleSelectAll = () => {
     if (selectedRows.size === pageList.length) {
@@ -463,16 +471,80 @@ export default function ChannelsModule() {
     setIsModalOpen(true);
   };
 
+  const handleRefresh = () => {
+    // Trigger data refetch by toggling the effect
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Example: fetch('/api/channels')
+        // const channelsRes = await fetch('/api/channels');
+        // const channelsData = await channelsRes.json();
+        // setChannels(channelsData);
+        // setActiveChannel(channelsData[0] || null);
+      } catch (err) {
+        setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Cards */}
       <div className="grid grid-cols-3 gap-4">
-        {channels.map((ch) => (
-          <ChannelCard
-            key={ch.id}
-            channel={ch}
-          />
-        ))}
+        {isLoading ? (
+          // Loading skeleton for channel cards
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="w-32 h-4 bg-gray-200 rounded animate-pulse" />
+                  <div className="w-24 h-3 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </>
+        ) : error ? (
+          // Error state for channel cards
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl border border-red-200 p-5 flex items-center gap-4">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <X size={16} className="text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-red-500">Lỗi tải dữ liệu</p>
+                  <p className="text-xs text-gray-400">Vui lòng thử lại</p>
+                </div>
+              </div>
+            ))}
+          </>
+        ) : channels.length > 0 ? (
+          channels.map((ch) => (
+            <ChannelCard
+              key={ch.id}
+              channel={ch}
+            />
+          ))
+        ) : (
+          // Empty state for channel cards
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl border border-dashed border-gray-200 p-5 flex items-center justify-center">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center mb-2">
+                    <Inbox size={18} className="text-gray-300" />
+                  </div>
+                  <p className="text-xs text-gray-400">Chưa có kênh</p>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
       {/* Table section */}
@@ -481,8 +553,10 @@ export default function ChannelsModule() {
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <PlatformIcon platform={activeChannel.platform} size="sm" />
-              <h2 className="text-base font-semibold text-gray-800">{activeChannel.name}</h2>
+              {activeChannel && <PlatformIcon platform={activeChannel.platform} size="sm" />}
+              <h2 className="text-base font-semibold text-gray-800">
+                {activeChannel?.name || 'Kênh'}
+              </h2>
             </div>
             <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
               {pageList.length} trang
@@ -492,19 +566,30 @@ export default function ChannelsModule() {
           <div className="flex items-center gap-2">
             {/* Channel switcher */}
             <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg mr-2">
-              {channels.map((ch) => (
-                <button
-                  key={ch.id}
-                  onClick={() => setActiveChannel(ch)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
-                    activeChannel.id === ch.id
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <PlatformIcon platform={ch.platform} size="sm" />
-                </button>
-              ))}
+              {channels.length > 0 ? (
+                channels.map((ch) => (
+                  <button
+                    key={ch.id}
+                    onClick={() => setActiveChannel(ch)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
+                      activeChannel?.id === ch.id
+                        ? 'bg-white text-gray-800 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <PlatformIcon platform={ch.platform} size="sm" />
+                  </button>
+                ))
+              ) : (
+                // Placeholder channel switcher when no channels
+                <>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="px-3 py-1.5">
+                      <div className="w-5 h-5 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
 
             {/* Search */}
@@ -519,7 +604,7 @@ export default function ChannelsModule() {
               />
             </div>
 
-            <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Làm mới">
+            <button onClick={handleRefresh} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Làm mới">
               <RefreshCw size={14} />
             </button>
             <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Xuất file">
@@ -552,93 +637,103 @@ export default function ChannelsModule() {
             </tr>
           </thead>
           <tbody>
-            {pageList.map((page) => (
-              <>
-                <tr
-                  key={page.id}
-                  className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${
-                    selectedRows.has(page.id) ? 'bg-blue-50/30' : ''
-                  }`}
-                >
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.has(page.id)}
-                      onChange={() => toggleSelect(page.id)}
-                      className="rounded border-gray-300 text-blue-500 focus:ring-blue-400 cursor-pointer"
-                    />
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="text-xs font-mono text-gray-500">{page.id}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <PlatformIcon platform={page.platform} size="sm" />
-                      <span className="text-sm font-medium text-gray-800">{page.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-lg ${
-                      page.platform === 'facebook' ? 'bg-blue-50 text-blue-600' :
-                      page.platform === 'zalo' ? 'bg-blue-50 text-blue-500' :
-                      'bg-purple-50 text-purple-600'
-                    }`}>
-                      {page.platform === 'facebook' ? 'Facebook' :
-                       page.platform === 'zalo' ? 'Zalo' : 'Instagram'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
-                      {page.group}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {page.staffCount > 0 ? (
-                        <>
-                          <div className="flex -space-x-1.5">
-                            {Array.from({ length: Math.min(page.staffCount, 3) }).map((_, i) => (
-                              <div
-                                key={i}
-                                className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center"
-                              >
-                                <span className="text-white text-[8px] font-bold">
-                                  {['NH', 'LT', 'PM'][i]}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          <span className="text-xs text-gray-500 ml-1">{page.staffCount} NV</span>
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">Chưa có</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => handleOpenModal(page)}
-                        className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
-                        title="Phân công nhân viên"
-                      >
-                        <Users size={14} />
-                      </button>
-                      <button className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors" title="Sửa">
-                        <Edit2 size={14} />
-                      </button>
-                      <button className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Xóa">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {/* Expandable row */}
-                {page.platform === 'facebook' && (
-                  <ExpandedRow key={`exp-${page.id}`} page={page} />
-                )}
-              </>
-            ))}
+            {isLoading ? (
+              <LoadingSkeleton />
+            ) : pageList.length > 0 ? (
+              pageList.map((page) => (
+                <>
+                  <tr
+                    key={page.id}
+                    className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+                      selectedRows.has(page.id) ? 'bg-blue-50/30' : ''
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.has(page.id)}
+                        onChange={() => toggleSelect(page.id)}
+                        className="rounded border-gray-300 text-blue-500 focus:ring-blue-400 cursor-pointer"
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="text-xs font-mono text-gray-500">{page.id}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <PlatformIcon platform={page.platform} size="sm" />
+                        <span className="text-sm font-medium text-gray-800">{page.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-lg ${
+                        page.platform === 'facebook' ? 'bg-blue-50 text-blue-600' :
+                        page.platform === 'zalo' ? 'bg-blue-50 text-blue-500' :
+                        'bg-purple-50 text-purple-600'
+                      }`}>
+                        {page.platform === 'facebook' ? 'Facebook' :
+                         page.platform === 'zalo' ? 'Zalo' : 'Instagram'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
+                        {page.group}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {page.staff && page.staff.length > 0 ? (
+                          <>
+                            <div className="flex -space-x-1.5">
+                              {page.staff.slice(0, 3).map((staff, i) => (
+                                <div
+                                  key={staff.id}
+                                  className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center"
+                                >
+                                  <span className="text-white text-[8px] font-bold">
+                                    {staff.avatar}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-xs text-gray-500 ml-1">{page.staff.length} NV</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Chưa có</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleOpenModal(page)}
+                          className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
+                          title="Phân công nhân viên"
+                        >
+                          <Users size={14} />
+                        </button>
+                        <button className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors" title="Sửa">
+                          <Edit2 size={14} />
+                        </button>
+                        <button className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Xóa">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Expandable row */}
+                  {page.platform === 'facebook' && (
+                    <ExpandedRow key={`exp-${page.id}`} page={page} />
+                  )}
+                </>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState message="Chưa có dữ liệu" />
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

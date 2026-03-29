@@ -2,7 +2,7 @@
  * ServicesModule - Trang Mô đun 5: Quản trị Dịch vụ và Sản phẩm
  * Bố cục: 2 cột - Danh sách Dịch vụ (trái) + Cấu hình phân quyền (phải)
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Edit2,
@@ -25,135 +25,9 @@ import {
   Globe,
   LayoutGrid,
   Share2,
+  Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
-
-// ===== MOCK DATA =====
-
-const serviceCategories = [
-  { id: 1, name: 'Thẩm mỹ da', icon: Sparkles, color: 'bg-pink-500' },
-  { id: 2, name: 'Phẫu thuật', icon: Scissors, color: 'bg-red-500' },
-  { id: 3, name: 'Điều trị', icon: HeartPulse, color: 'bg-green-500' },
-  { id: 4, name: 'Tư vấn', icon: Stethoscope, color: 'bg-blue-500' },
-  { id: 5, name: 'Mắt', icon: Eye, color: 'bg-purple-500' },
-  { id: 6, name: 'Dược phẩm', icon: Pill, color: 'bg-amber-500' },
-];
-
-const servicesInit = [
-  // Thẩm mỹ da
-  {
-    id: 1,
-    name: 'Filler Ống Phi',
-    category: 'Thẩm mỹ da',
-    status: true,
-    price: '2,500,000đ',
-    image: 'filler',
-    color: 'from-pink-100 to-rose-200',
-    iconBg: 'bg-pink-500',
-  },
-  {
-    id: 2,
-    name: 'Nâng Mũi',
-    category: 'Thẩm mỹ da',
-    status: true,
-    price: '15,000,000đ',
-    image: 'nose',
-    color: 'from-rose-100 to-pink-200',
-    iconBg: 'bg-rose-500',
-  },
-  {
-    id: 3,
-    name: 'Căng Chỉ Da',
-    category: 'Thẩm mỹ da',
-    status: true,
-    price: '8,000,000đ',
-    image: 'thread',
-    color: 'from-fuchsia-100 to-pink-200',
-    iconBg: 'bg-fuchsia-500',
-  },
-  {
-    id: 4,
-    name: 'Trẻ hóa Da',
-    category: 'Thẩm mỹ da',
-    status: false,
-    price: '3,500,000đ',
-    image: 'rejuv',
-    color: 'from-pink-50 to-rose-100',
-    iconBg: 'bg-pink-400',
-  },
-  // Phẫu thuật
-  {
-    id: 5,
-    name: 'Phẫu thuật Mắt',
-    category: 'Phẫu thuật',
-    status: true,
-    price: '12,000,000đ',
-    image: 'eyes',
-    color: 'from-red-100 to-orange-200',
-    iconBg: 'bg-red-500',
-  },
-  {
-    id: 6,
-    name: 'Nâng Ngực',
-    category: 'Phẫu thuật',
-    status: true,
-    price: '45,000,000đ',
-    image: 'breast',
-    color: 'from-orange-100 to-red-200',
-    iconBg: 'bg-orange-500',
-  },
-  // Điều trị
-  {
-    id: 7,
-    name: 'Điều trị Mụn',
-    category: 'Điều trị',
-    status: true,
-    price: '1,200,000đ',
-    image: 'acne',
-    color: 'from-green-100 to-emerald-200',
-    iconBg: 'bg-green-500',
-  },
-  {
-    id: 8,
-    name: 'Laser Trị Thâm',
-    category: 'Điều trị',
-    status: false,
-    price: '2,000,000đ',
-    image: 'laser',
-    color: 'from-emerald-50 to-green-100',
-    iconBg: 'bg-emerald-500',
-  },
-  // Tư vấn
-  {
-    id: 9,
-    name: 'Tư vấn Da liễu',
-    category: 'Tư vấn',
-    status: true,
-    price: '500,000đ',
-    image: 'consult',
-    color: 'from-blue-100 to-indigo-200',
-    iconBg: 'bg-blue-500',
-  },
-  {
-    id: 10,
-    name: 'Tư vấn Dinh dưỡng',
-    category: 'Tư vấn',
-    status: true,
-    price: '400,000đ',
-    image: 'nutrition',
-    color: 'from-indigo-100 to-blue-200',
-    iconBg: 'bg-indigo-500',
-  },
-];
-
-const teleGroups = ['Nhóm Tele A', 'Nhóm Tele B', 'Nhóm Tele C'];
-const pageList = [
-  { id: 'fb1', name: 'Fanpage Chính', platform: 'facebook', pageId: 'FP-001' },
-  { id: 'zalo1', name: 'Zalo OA Chính', platform: 'zalo', pageId: 'ZOA-001' },
-  { id: 'web1', name: 'Website Đặt lịch', platform: 'website', pageId: 'WEB-001' },
-  { id: 'hotline1', name: 'Hotline Tổng đài', platform: 'hotline', pageId: 'HL-001' },
-  { id: 'fb2', name: 'Fanpage Phụ', platform: 'facebook', pageId: 'FP-002' },
-];
 
 // ===== SERVICE ICON MAPPING =====
 
@@ -171,6 +45,38 @@ const SERVICE_ICONS = {
 };
 
 // ===== SUB-COMPONENTS =====
+
+function EmptyState({ message = 'Chưa có dữ liệu' }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+        <Inbox size={24} className="text-gray-300" />
+      </div>
+      <p className="text-sm font-medium text-gray-500">{message}</p>
+      <p className="text-xs text-gray-400 mt-1">Thử tìm kiếm với từ khóa khác</p>
+    </div>
+  );
+}
+
+function LoadingSkeleton({ rows = 8, cols = 5 }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      {Array.from({ length: rows * cols }).map((_, idx) => (
+        <div key={idx} className="bg-gray-50 rounded-xl border border-gray-100 p-4 animate-pulse">
+          <div className="flex justify-center mb-3">
+            <div className="w-14 h-14 bg-gray-200 rounded-2xl" />
+          </div>
+          <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto mb-2" />
+          <div className="h-2 bg-gray-100 rounded w-1/2 mx-auto mb-2" />
+          <div className="flex justify-center mt-2">
+            <div className="h-5 w-16 bg-gray-100 rounded" />
+          </div>
+          <div className="h-2 bg-gray-100 rounded w-1/3 mx-auto mt-1.5" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function ServiceIcon({ type, iconBg, size = 'lg' }) {
   const IconComponent = SERVICE_ICONS[type] || LayoutGrid;
@@ -416,13 +322,61 @@ function PagePermissionTab({ pageList }) {
 // ===== MAIN COMPONENT =====
 
 export default function ServicesModule() {
-  const [selectedCategory, setSelectedCategory] = useState(serviceCategories[0]);
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [services, setServices] = useState([]);
+  const [teleGroups, setTeleGroups] = useState([]);
+  const [pageList, setPageList] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
   const [rightTab, setRightTab] = useState('tele');
   const [searchQuery, setSearchQuery] = useState('');
-  const [services, setServices] = useState(servicesInit);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch all data on mount
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // TODO: Replace with actual API endpoints
+        // Example: const [catsRes, servRes, teleRes, pagesRes] = await Promise.all([
+        //   fetch('/api/service-categories'),
+        //   fetch('/api/services'),
+        //   fetch('/api/tele-groups'),
+        //   fetch('/api/pages'),
+        // ]);
+        // const [cats, serv, tele, pages] = await Promise.all([
+        //   catsRes.json(),
+        //   servRes.json(),
+        //   teleRes.json(),
+        //   pagesRes.json(),
+        // ]);
+        // setServiceCategories(cats);
+        // setServices(serv);
+        // setTeleGroups(tele);
+        // setPageList(pages);
+
+        // Simulate loading delay (remove when real API is connected)
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Placeholder empty data - remove when API is connected
+        setServiceCategories([]);
+        setServices([]);
+        setTeleGroups([]);
+        setPageList([]);
+        setSelectedCategory(null);
+      } catch (err) {
+        setError(err.message || 'Không thể tải dữ liệu dịch vụ');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const filteredServices = services.filter((s) => {
+    if (!selectedCategory) return false;
     const matchCategory = s.category === selectedCategory.name;
     const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
@@ -439,6 +393,19 @@ export default function ServicesModule() {
   const totalServices = services.length;
   const categoryCount = serviceCategories.length;
 
+  // Derive icon/color for selected category from the category data
+  const CATEGORY_ICON_MAP = {
+    'Thẩm mỹ da': { icon: Sparkles, color: 'bg-pink-500' },
+    'Phẫu thuật': { icon: Scissors, color: 'bg-red-500' },
+    'Điều trị': { icon: HeartPulse, color: 'bg-green-500' },
+    'Tư vấn': { icon: Stethoscope, color: 'bg-blue-500' },
+    'Mắt': { icon: Eye, color: 'bg-purple-500' },
+    'Dược phẩm': { icon: Pill, color: 'bg-amber-500' },
+  };
+
+  const catMeta = selectedCategory ? (CATEGORY_ICON_MAP[selectedCategory.name] || { icon: LayoutGrid, color: 'bg-gray-400' }) : { icon: LayoutGrid, color: 'bg-gray-400' };
+  const CatIcon = catMeta.icon;
+
   return (
     <div className="flex gap-4 h-[calc(100vh-140px)]">
       {/* ===== LEFT COLUMN: Danh sách Dịch vụ ===== */}
@@ -452,40 +419,57 @@ export default function ServicesModule() {
             <p className="text-[10px] text-gray-400 mt-0.5">{categoryCount} nhóm</p>
           </div>
           <nav className="flex-1 overflow-y-auto py-1">
-            {serviceCategories.map((cat) => {
-              const Icon = cat.icon;
-              const isActive = selectedCategory.id === cat.id;
-              const count = services.filter((s) => s.category === cat.name).length;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat);
-                    setSelectedService(null);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all duration-150 ${
-                    isActive
-                      ? 'bg-blue-50 border-r-2 border-blue-500'
-                      : 'hover:bg-gray-50 border-r-2 border-transparent'
-                  }`}
-                >
-                  <div className={`w-7 h-7 ${cat.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                    <Icon size={14} className="text-white" />
+            {isLoading ? (
+              // Loading skeleton for categories
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2.5 px-4 py-2.5">
+                  <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-3 bg-gray-200 rounded w-16 mb-1 animate-pulse" />
+                    <div className="h-2 bg-gray-100 rounded w-10 animate-pulse" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium truncate ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
-                      {cat.name}
-                    </p>
-                    <p className={`text-[10px] ${isActive ? 'text-blue-400' : 'text-gray-400'}`}>
-                      {count} dịch vụ
-                    </p>
-                  </div>
-                  {isActive && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                  )}
-                </button>
-              );
-            })}
+                </div>
+              ))
+            ) : serviceCategories.length > 0 ? (
+              serviceCategories.map((cat) => {
+                const Icon = cat.icon || LayoutGrid;
+                const isActive = selectedCategory?.id === cat.id;
+                const count = services.filter((s) => s.category === cat.name).length;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setSelectedCategory(cat);
+                      setSelectedService(null);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all duration-150 ${
+                      isActive
+                        ? 'bg-blue-50 border-r-2 border-blue-500'
+                        : 'hover:bg-gray-50 border-r-2 border-transparent'
+                    }`}
+                  >
+                    <div className={`w-7 h-7 ${cat.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                      <Icon size={14} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-medium truncate ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
+                        {cat.name}
+                      </p>
+                      <p className={`text-[10px] ${isActive ? 'text-blue-400' : 'text-gray-400'}`}>
+                        {count} dịch vụ
+                      </p>
+                    </div>
+                    {isActive && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                    )}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-6 text-center">
+                <p className="text-xs text-gray-400">Chưa có nhóm dịch vụ</p>
+              </div>
+            )}
           </nav>
         </div>
 
@@ -496,13 +480,12 @@ export default function ServicesModule() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 ${selectedCategory.color} rounded-lg flex items-center justify-center`}>
-                    {(() => {
-                      const Icon = selectedCategory.icon;
-                      return <Icon size={12} className="text-white" />;
-                    })()}
+                  <div className={`w-6 h-6 ${selectedCategory ? catMeta.color : 'bg-gray-400'} rounded-lg flex items-center justify-center`}>
+                    <CatIcon size={12} className="text-white" />
                   </div>
-                  <h2 className="text-base font-semibold text-gray-900">{selectedCategory.name}</h2>
+                  <h2 className="text-base font-semibold text-gray-900">
+                    {selectedCategory ? selectedCategory.name : 'Dịch vụ'}
+                  </h2>
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">
                   {activeServices}/{totalServices} dịch vụ đang hoạt động
@@ -518,7 +501,7 @@ export default function ServicesModule() {
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder={`Tìm kiếm trong ${selectedCategory.name}...`}
+                placeholder={`Tìm kiếm trong ${selectedCategory ? selectedCategory.name : 'dịch vụ'}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-colors"
@@ -536,7 +519,17 @@ export default function ServicesModule() {
 
           {/* Cards grid */}
           <div className="flex-1 overflow-y-auto p-4">
-            {filteredServices.length > 0 ? (
+            {isLoading ? (
+              <LoadingSkeleton rows={2} cols={5} />
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-3">
+                  <X size={24} className="text-red-300" />
+                </div>
+                <p className="text-sm font-medium text-red-500">{error}</p>
+                <p className="text-xs text-gray-400 mt-1">Vui lòng thử lại</p>
+              </div>
+            ) : filteredServices.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {filteredServices.map((service) => (
                   <ServiceCard
@@ -549,13 +542,7 @@ export default function ServicesModule() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
-                  <Image size={24} className="text-gray-300" />
-                </div>
-                <p className="text-sm font-medium text-gray-500">Không có dịch vụ nào</p>
-                <p className="text-xs text-gray-400 mt-1">Thử tìm kiếm với từ khóa khác</p>
-              </div>
+              <EmptyState message={searchQuery ? 'Không có dịch vụ nào phù hợp' : 'Chưa có dữ liệu'} />
             )}
           </div>
         </div>

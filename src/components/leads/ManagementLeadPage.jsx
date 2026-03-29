@@ -3,7 +3,7 @@
  * Route: /leads
  * Sử dụng MasterLayout + BadgeStatus + PrimaryButton + SearchInput
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Phone,
   Edit2,
@@ -14,13 +14,22 @@ import {
   Clock,
   CheckCircle,
   Users,
+  Inbox,
 } from 'lucide-react';
 import BadgeStatus from '../common/BadgeStatus';
 import PrimaryButton from '../common/PrimaryButton';
 import SearchInput from '../common/SearchInput';
-import { leadsData, leadStatuses, leadSources, leadServices } from '../../data/mockLeadData';
+import { TableSkeleton } from '../common/SkeletonLoader';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function ManagementLeadPage() {
+  // Data state
+  const [leads, setLeads] = useState([]);
+  const [leadStatuses, setLeadStatuses] = useState([]);
+  const [leadSources, setLeadSources] = useState([]);
+  const [leadServices, setLeadServices] = useState([]);
+
+  // UI state
   const [activeTab, setActiveTab] = useState('list'); // 'list' | 'followup' | 'closed'
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -29,14 +38,54 @@ export default function ManagementLeadPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [selectedRows, setSelectedRows] = useState(new Set());
 
-  // Tab counts
-  const counts = {
-    list: leadsData.filter((l) => ['Mới', 'Đang xử lý', 'Chưa liên hệ', 'Đã liên hệ'].includes(l.status)).length,
-    followup: leadsData.filter((l) => l.followUp && l.followUp !== '-').length,
-    closed: leadsData.filter((l) => ['Thành công', 'Từ chối'].includes(l.status)).length,
+  // Async state
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const toast = useToast();
+
+  // Fetch all data from API
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Example: fetch('/api/leads')
+      // const res = await fetch('/api/leads');
+      // if (!res.ok) throw new Error('Failed to fetch leads');
+      // const data = await res.json();
+
+      // Example: fetch('/api/leads/meta') for filter dropdowns
+      // const metaRes = await fetch('/api/leads/meta');
+      // const meta = await metaRes.json();
+
+      // Placeholder: simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      // After real API integration, set data like:
+      // setLeads(data.leads || []);
+      // setLeadStatuses(data.statuses || []);
+      // setLeadSources(data.sources || []);
+      // setLeadServices(data.services || []);
+    } catch (err) {
+      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+      toast.error(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const filteredLeads = leadsData.filter((lead) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Tab counts
+  const counts = {
+    list: leads.filter((l) => ['Mới', 'Đang xử lý', 'Chưa liên hệ', 'Đã liên hệ'].includes(l.status)).length,
+    followup: leads.filter((l) => l.followUp && l.followUp !== '-').length,
+    closed: leads.filter((l) => ['Thành công', 'Từ chối'].includes(l.status)).length,
+  };
+
+  const filteredLeads = leads.filter((lead) => {
     const matchSearch =
       lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lead.phone.includes(searchQuery) ||
@@ -84,6 +133,30 @@ export default function ManagementLeadPage() {
     'Shopee': 'S',
   };
 
+  // Empty State Component
+  const EmptyState = () => (
+    <tr>
+      <td colSpan={10} className="px-4 py-16 text-center text-gray-400 text-sm">
+        <div className="flex flex-col items-center gap-2">
+          <Inbox size={32} className="text-gray-300" />
+          <p>Chưa có dữ liệu</p>
+        </div>
+      </td>
+    </tr>
+  );
+
+  // Loading skeleton rows
+  const LoadingSkeletonRows = () =>
+    Array.from({ length: 8 }).map((_, i) => (
+      <tr key={i} className="border-b border-gray-50">
+        {Array.from({ length: 10 }).map((_, j) => (
+          <td key={j} className="px-4 py-3">
+            <div className="h-10 bg-gray-100 rounded-lg animate-pulse" />
+          </td>
+        ))}
+      </tr>
+    ));
+
   return (
     <div className="space-y-4">
       {/* Page Header */}
@@ -91,7 +164,7 @@ export default function ManagementLeadPage() {
         <div>
           <h1 className="text-lg font-bold text-gray-900">Quản lý Lead</h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            {leadsData.length} leads · {counts.list} tiếp cận · {counts.followup} hẹn follow-up · {counts.closed} đã chốt
+            {leads.length} leads · {counts.list} tiếp cận · {counts.followup} hẹn follow-up · {counts.closed} đã chốt
           </p>
         </div>
       </div>
@@ -250,156 +323,194 @@ export default function ManagementLeadPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr className="text-xs text-gray-500 uppercase tracking-wide">
-                <th className="text-left px-4 py-2.5 font-semibold w-8">
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.size === filteredLeads.length && filteredLeads.length > 0}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-500 focus:ring-blue-400 cursor-pointer"
-                  />
-                </th>
-                <th className="text-left px-3 py-2.5 font-semibold w-12">PRI</th>
-                <th className="text-left px-3 py-2.5 font-semibold">Khách hàng</th>
-                <th className="text-left px-3 py-2.5 font-semibold w-28">SĐT</th>
-                <th className="text-left px-3 py-2.5 font-semibold w-28">Nguồn Lead</th>
-                <th className="text-left px-3 py-2.5 font-semibold w-36 hidden md:table-cell">Dịch vụ quan tâm</th>
-                <th className="text-left px-3 py-2.5 font-semibold w-28">Trạng thái</th>
-                <th className="text-left px-3 py-2.5 font-semibold w-32 hidden lg:table-cell">Follow-up</th>
-                <th className="text-left px-3 py-2.5 font-semibold w-36 hidden sm:table-cell">Người phụ trách</th>
-                <th className="text-center px-3 py-2.5 font-semibold w-28">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLeads.map((lead) => (
-                <tr
-                  key={lead.id}
-                  className={`border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer transition-colors ${
-                    selectedRows.has(lead.id) ? 'bg-blue-50/30' : ''
-                  }`}
-                >
-                  {/* Checkbox */}
-                  <td className="px-4 py-3">
+          {isLoading ? (
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr className="text-xs text-gray-500 uppercase tracking-wide">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <th key={i} className="text-left px-4 py-3 font-semibold">
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-16" />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <LoadingSkeletonRows />
+              </tbody>
+            </table>
+          ) : error ? (
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr className="text-xs text-gray-500 uppercase tracking-wide">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <th key={i} className="text-left px-4 py-3 font-semibold">
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-16" />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan={10} className="px-4 py-16 text-center text-red-400 text-sm">
+                    <div className="flex flex-col items-center gap-2">
+                      <p>{error}</p>
+                      <button
+                        onClick={fetchData}
+                        className="text-xs text-blue-500 hover:underline"
+                      >
+                        Thử lại
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr className="text-xs text-gray-500 uppercase tracking-wide">
+                  <th className="text-left px-4 py-2.5 font-semibold w-8">
                     <input
                       type="checkbox"
-                      checked={selectedRows.has(lead.id)}
-                      onChange={() => handleSelect(lead.id)}
+                      checked={selectedRows.size === filteredLeads.length && filteredLeads.length > 0}
+                      onChange={handleSelectAll}
                       className="rounded border-gray-300 text-blue-500 focus:ring-blue-400 cursor-pointer"
                     />
-                  </td>
-
-                  {/* Priority */}
-                  <td className="px-3 py-3">
-                    <span
-                      className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded ${priorityColor[lead.priority]}`}
+                  </th>
+                  <th className="text-left px-3 py-2.5 font-semibold w-12">PRI</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Khách hàng</th>
+                  <th className="text-left px-3 py-2.5 font-semibold w-28">SĐT</th>
+                  <th className="text-left px-3 py-2.5 font-semibold w-28">Nguồn Lead</th>
+                  <th className="text-left px-3 py-2.5 font-semibold w-36 hidden md:table-cell">Dịch vụ quan tâm</th>
+                  <th className="text-left px-3 py-2.5 font-semibold w-28">Trạng thái</th>
+                  <th className="text-left px-3 py-2.5 font-semibold w-32 hidden lg:table-cell">Follow-up</th>
+                  <th className="text-left px-3 py-2.5 font-semibold w-36 hidden sm:table-cell">Người phụ trách</th>
+                  <th className="text-center px-3 py-2.5 font-semibold w-28">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeads.length > 0 ? (
+                  filteredLeads.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      className={`border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer transition-colors ${
+                        selectedRows.has(lead.id) ? 'bg-blue-50/30' : ''
+                      }`}
                     >
-                      {prioritySymbol[lead.priority]}
-                    </span>
-                  </td>
+                      {/* Checkbox */}
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.has(lead.id)}
+                          onChange={() => handleSelect(lead.id)}
+                          className="rounded border-gray-300 text-blue-500 focus:ring-blue-400 cursor-pointer"
+                        />
+                      </td>
 
-                  {/* Customer */}
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-[10px] font-bold">{lead.avatar}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">{lead.name}</p>
-                        <p className="text-[11px] text-gray-400 md:hidden">{lead.phone}</p>
-                      </div>
-                    </div>
-                  </td>
+                      {/* Priority */}
+                      <td className="px-3 py-3">
+                        <span
+                          className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded ${priorityColor[lead.priority]}`}
+                        >
+                          {prioritySymbol[lead.priority]}
+                        </span>
+                      </td>
 
-                  {/* Phone */}
-                  <td className="px-3 py-3">
-                    <span className="text-sm text-gray-700">{lead.phone}</span>
-                  </td>
+                      {/* Customer */}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-[10px] font-bold">{lead.avatar}</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{lead.name}</p>
+                            <p className="text-[11px] text-gray-400 md:hidden">{lead.phone}</p>
+                          </div>
+                        </div>
+                      </td>
 
-                  {/* Source */}
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-600 text-[9px] font-bold rounded">
-                        {sourceIcon[lead.source] || lead.source.charAt(0)}
-                      </span>
-                      <span className="text-xs text-gray-600">{lead.source}</span>
-                    </div>
-                  </td>
+                      {/* Phone */}
+                      <td className="px-3 py-3">
+                        <span className="text-sm text-gray-700">{lead.phone}</span>
+                      </td>
 
-                  {/* Service */}
-                  <td className="px-3 py-3 hidden md:table-cell">
-                    <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
-                      {lead.service}
-                    </span>
-                  </td>
+                      {/* Source */}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-600 text-[9px] font-bold rounded">
+                            {sourceIcon[lead.source] || lead.source?.charAt(0)}
+                          </span>
+                          <span className="text-xs text-gray-600">{lead.source}</span>
+                        </div>
+                      </td>
 
-                  {/* Status */}
-                  <td className="px-3 py-3">
-                    <BadgeStatus status={lead.status} size="sm" />
-                  </td>
+                      {/* Service */}
+                      <td className="px-3 py-3 hidden md:table-cell">
+                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
+                          {lead.service}
+                        </span>
+                      </td>
 
-                  {/* Follow-up */}
-                  <td className="px-3 py-3 hidden lg:table-cell">
-                    <div className="flex items-center gap-1.5">
-                      <Clock size={11} className="text-gray-400" />
-                      <span className={`text-xs ${lead.followUp && lead.followUp !== '-' ? 'text-gray-700' : 'text-gray-400'}`}>
-                        {lead.followUp !== '-' ? lead.followUp.split(' ')[1] : '—'}
-                      </span>
-                    </div>
-                  </td>
+                      {/* Status */}
+                      <td className="px-3 py-3">
+                        <BadgeStatus status={lead.status} size="sm" />
+                      </td>
 
-                  {/* Assigned to */}
-                  <td className="px-3 py-3 hidden sm:table-cell">
-                    <span className={`text-xs ${lead.assignedTo === '-' ? 'text-gray-400 italic' : 'text-gray-600'}`}>
-                      {lead.assignedTo === '-' ? 'Chưa gán' : lead.assignedTo}
-                    </span>
-                  </td>
+                      {/* Follow-up */}
+                      <td className="px-3 py-3 hidden lg:table-cell">
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={11} className="text-gray-400" />
+                          <span className={`text-xs ${lead.followUp && lead.followUp !== '-' ? 'text-gray-700' : 'text-gray-400'}`}>
+                            {lead.followUp !== '-' ? lead.followUp?.split(' ')[1] : '—'}
+                          </span>
+                        </div>
+                      </td>
 
-                  {/* Actions */}
-                  <td className="px-3 py-3">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        className="p-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-                        title="Gọi"
-                      >
-                        <Phone size={14} />
-                      </button>
-                      <button
-                        className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
-                        title="Sửa"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        className="p-1.5 rounded-lg bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition-colors"
-                        title="Xóa"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      {/* Assigned to */}
+                      <td className="px-3 py-3 hidden sm:table-cell">
+                        <span className={`text-xs ${lead.assignedTo === '-' ? 'text-gray-400 italic' : 'text-gray-600'}`}>
+                          {lead.assignedTo === '-' ? 'Chưa gán' : lead.assignedTo}
+                        </span>
+                      </td>
 
-              {filteredLeads.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-4 py-16 text-center text-gray-400 text-sm">
-                    <div className="flex flex-col items-center gap-2">
-                      <Users size={32} className="text-gray-300" />
-                      <p>Không tìm thấy lead nào phù hợp</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      {/* Actions */}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            className="p-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                            title="Gọi"
+                          >
+                            <Phone size={14} />
+                          </button>
+                          <button
+                            className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
+                            title="Sửa"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            className="p-1.5 rounded-lg bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition-colors"
+                            title="Xóa"
+                            onClick={() => toast.success('Đã xóa lead thành công')}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <EmptyState />
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Pagination */}
         <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
           <p className="text-xs text-gray-400">
-            Hiển thị {filteredLeads.length} / {leadsData.length} leads
+            Hiển thị {filteredLeads.length} / {leads.length} leads
           </p>
           <div className="flex items-center gap-1">
             <button className="px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-100 rounded-lg transition-colors cursor-not-allowed" disabled>

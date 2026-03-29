@@ -4,7 +4,7 @@
  *  - Cột trái: Quy tắc Routing + Trình xây dựng quy tắc IF/THEN
  *  - Cột phải: Quản lý nhóm Tele & Hàng chờ
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Edit2,
@@ -22,98 +22,13 @@ import {
   Activity,
   Layers,
   Zap,
+  Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
+import { CardGridSkeleton } from '../common/SkeletonLoader';
+import { useToast } from '../../contexts/ToastContext';
 
-// ===== MOCK DATA =====
-
-const routingRulesInit = [
-  {
-    id: 1,
-    name: 'Quy tắc 1',
-    status: true,
-    conditions: [
-      { field: 'Nguồn Lead', operator: '=', value: 'Facebook' },
-    ],
-    actions: [{ type: 'assign_group', value: 'Nhóm Tele A' }],
-  },
-  {
-    id: 2,
-    name: 'Quy tắc 2',
-    status: true,
-    conditions: [
-      { field: 'Dịch vụ', operator: '=', value: 'Internet FPT' },
-    ],
-    actions: [{ type: 'assign_agent', value: 'Nguyễn Thu Hà' }],
-  },
-  {
-    id: 3,
-    name: 'Quy tắc 3',
-    status: false,
-    conditions: [
-      { field: 'Giờ Lead', operator: 'between', value: '08:00 - 17:00' },
-    ],
-    actions: [{ type: 'assign_group', value: 'Nhóm Tele B' }],
-  },
-  {
-    id: 4,
-    name: 'Quy tắc 4',
-    status: true,
-    conditions: [
-      { field: 'Tỉnh/TP', operator: '=', value: 'Hồ Chí Minh' },
-    ],
-    actions: [{ type: 'mark_priority', value: 'Cao' }],
-  },
-];
-
-const teleGroupsInit = [
-  {
-    id: 1,
-    name: 'Nhóm Tele A',
-    seniority: 'Senior',
-    capacity: 20,
-    current: 15,
-    agents: [
-      { id: 1, name: 'Nguyễn Thu Hà', avatar: 'NH', status: 'online' },
-      { id: 2, name: 'Lê Minh Tuấn', avatar: 'LT', status: 'online' },
-      { id: 3, name: 'Trần Văn Đạt', avatar: 'TD', status: 'busy' },
-      { id: 4, name: 'Phạm Thị Mai', avatar: 'PM', status: 'online' },
-      { id: 5, name: 'Hoàng Văn Bảo', avatar: 'HB', status: 'offline' },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Nhóm Tele B',
-    seniority: 'Junior',
-    capacity: 15,
-    current: 8,
-    agents: [
-      { id: 6, name: 'Vũ Minh Đức', avatar: 'VD', status: 'online' },
-      { id: 7, name: 'Đặng Thu Hà', avatar: 'DH', status: 'online' },
-      { id: 8, name: 'Bùi Thị Lan', avatar: 'BL', status: 'offline' },
-      { id: 9, name: 'Lê Quang Huy', avatar: 'LH', status: 'busy' },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Nhóm Tele C',
-    seniority: 'Lead',
-    capacity: 10,
-    current: 10,
-    agents: [
-      { id: 10, name: 'Phạm Đức Cường', avatar: 'PC', status: 'busy' },
-      { id: 11, name: 'Hoàng Thị Dung', avatar: 'HD', status: 'online' },
-    ],
-  },
-];
-
-const queueDataInit = [
-  { id: 'LD001', waitTime: '00:45' },
-  { id: 'LD002', waitTime: '02:30' },
-  { id: 'LD003', waitTime: '05:15' },
-  { id: 'LD004', waitTime: '00:10' },
-  { id: 'LD005', waitTime: '01:20' },
-];
+// ===== CONSTANTS (form options only, no data) =====
 
 const FIELD_OPTIONS = {
   'Nguồn Lead': ['Facebook', 'Website', 'Google Ads', 'Zalo', 'Giới thiệu', 'Hotline'],
@@ -135,6 +50,141 @@ const AGENT_OPTIONS = [
   'Hoàng Văn Bảo', 'Vũ Minh Đức', 'Đặng Thu Hà', 'Bùi Thị Lan',
 ];
 const PRIORITY_OPTIONS = ['Cao', 'Trung bình', 'Thấp'];
+
+// ===== EMPTY STATE COMPONENT =====
+
+function EmptyState({ message = 'Chưa có dữ liệu' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+        <Inbox size={24} className="text-gray-300" />
+      </div>
+      <p className="text-sm font-medium text-gray-500">{message}</p>
+    </div>
+  );
+}
+
+// ===== LOADING SKELETON =====
+
+function RuleTableSkeleton() {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex items-center gap-2">
+          <Layers size={14} className="text-blue-500" />
+          <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+        </div>
+        <div className="h-7 w-24 bg-gray-200 rounded-lg animate-pulse" />
+      </div>
+      <div className="overflow-y-auto max-h-48">
+        <table className="w-full">
+          <thead className="bg-gray-50 sticky top-0">
+            <tr className="text-xs text-gray-500 uppercase tracking-wide">
+              <th className="text-left px-4 py-2 font-semibold w-10">STT</th>
+              <th className="text-left px-3 py-2 font-semibold">Tên quy tắc</th>
+              <th className="text-center px-3 py-2 font-semibold w-24">Trạng thái</th>
+              <th className="text-center px-3 py-2 font-semibold w-28">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3].map((i) => (
+              <tr key={i} className="border-t border-gray-50">
+                <td className="px-4 py-3">
+                  <div className="h-3 w-4 bg-gray-200 rounded animate-pulse" />
+                </td>
+                <td className="px-3 py-3">
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+                    <div className="flex gap-1">
+                      <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
+                    </div>
+                  </div>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <div className="h-6 w-12 bg-gray-100 rounded animate-pulse mx-auto" />
+                </td>
+                <td className="px-3 py-3">
+                  <div className="flex items-center justify-center gap-1">
+                    <div className="h-7 w-7 bg-gray-100 rounded-lg animate-pulse" />
+                    <div className="h-7 w-7 bg-gray-100 rounded-lg animate-pulse" />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function TeleGroupSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gray-200" />
+              <div className="h-3 w-20 bg-gray-200 rounded" />
+            </div>
+            <div className="h-5 w-12 bg-gray-200 rounded-full" />
+          </div>
+          <div className="mb-3">
+            <div className="flex items-center justify-between text-xs mb-1.5">
+              <div className="h-2 w-16 bg-gray-100 rounded" />
+              <div className="h-2 w-8 bg-gray-100 rounded" />
+            </div>
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-gray-200 rounded-full" style={{ width: '60%' }} />
+            </div>
+          </div>
+          <div className="flex items-center gap-1 flex-wrap">
+            {[1, 2, 3, 4, 5].map((j) => (
+              <div key={j} className="w-7 h-7 rounded-full bg-gray-200" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function QueueTableSkeleton() {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex items-center gap-2">
+          <Activity size={14} className="text-blue-500" />
+          <div className="h-3 w-40 bg-gray-200 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="overflow-y-auto max-h-48">
+        <table className="w-full">
+          <thead className="bg-gray-50 sticky top-0">
+            <tr className="text-xs text-gray-500 uppercase tracking-wide">
+              <th className="text-left px-4 py-2 font-semibold">Lead ID</th>
+              <th className="text-left px-4 py-2 font-semibold">Thời gian chờ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3, 4].map((i) => (
+              <tr key={i} className="border-t border-gray-50">
+                <td className="px-4 py-2.5">
+                  <div className="h-4 w-14 bg-gray-200 rounded animate-pulse" />
+                </td>
+                <td className="px-4 py-2.5">
+                  <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 // ===== SUB-COMPONENTS =====
 
@@ -448,7 +498,7 @@ function RuleBuilder({ rule, onSave, onCancel, isNew }) {
 }
 
 function TeleGroupCard({ group }) {
-  const usage = Math.round((group.current / group.capacity) * 100);
+  const usage = group.capacity > 0 ? Math.round((group.current / group.capacity) * 100) : 0;
   const usageColor = usage >= 90 ? 'bg-red-500' : usage >= 70 ? 'bg-amber-500' : 'bg-green-500';
 
   const statusColors = {
@@ -523,6 +573,20 @@ function TeleGroupCard({ group }) {
 }
 
 function QueueTable({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center gap-2">
+            <Activity size={14} className="text-blue-500" />
+            <h3 className="text-sm font-semibold text-gray-800">Theo dõi hàng chờ trực tuyến</h3>
+          </div>
+        </div>
+        <EmptyState message="Chưa có lead nào trong hàng chờ" />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -544,8 +608,9 @@ function QueueTable({ data }) {
           </thead>
           <tbody>
             {data.map((item, idx) => {
-              const waitMin = parseInt(item.waitTime.split(':')[0]);
-              const waitSec = parseInt(item.waitTime.split(':')[1]);
+              const waitParts = (item.waitTime || '00:00').split(':');
+              const waitMin = parseInt(waitParts[0]) || 0;
+              const waitSec = parseInt(waitParts[1]) || 0;
               const isUrgent = waitMin >= 5;
               const isWarning = waitMin >= 2 && waitMin < 5;
               return (
@@ -581,6 +646,23 @@ function QueueTable({ data }) {
 }
 
 function RuleTable({ rules, onToggle, onEdit, onDelete, onAddNew }) {
+  if (!rules || rules.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center gap-2">
+            <Layers size={14} className="text-blue-500" />
+            <h3 className="text-sm font-semibold text-gray-800">Danh sách quy tắc</h3>
+          </div>
+          <PrimaryButton icon={Plus} size="sm" onClick={onAddNew}>
+            Thêm quy tắc
+          </PrimaryButton>
+        </div>
+        <EmptyState message="Chưa có dữ liệu" />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -671,20 +753,69 @@ function RuleTable({ rules, onToggle, onEdit, onDelete, onAddNew }) {
 // ===== MAIN COMPONENT =====
 
 export default function RoutingModule() {
-  const [rules, setRules] = useState(routingRulesInit);
-  const [teleGroups] = useState(teleGroupsInit);
-  const [queueData] = useState(queueDataInit);
+  const [rules, setRules] = useState([]);
+  const [teleGroups, setTeleGroups] = useState([]);
+  const [queueData, setQueueData] = useState([]);
   const [editingRule, setEditingRule] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const toast = useToast();
+
+  /**
+   * Fetch all routing data from the API.
+   *
+   * Expected API response shape:
+   * {
+   *   rules: [{ id, name, status, conditions: [{field, operator, value}], actions: [{type, value}] }],
+   *   teleGroups: [{ id, name, seniority, capacity, current, agents: [{id, name, avatar, status}] }],
+   *   queueData: [{ id, waitTime }]
+   * }
+   *
+   * Example:
+   *   const res = await fetch('/api/routing', { headers: { Authorization: `Bearer ${token}` } });
+   *   const data = await res.json();
+   */
+  const fetchRoutingData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Example: fetch('/api/routing', { headers: { Authorization: `Bearer ${token}` } })
+      // const res = await fetch('/api/routing');
+      // if (!res.ok) throw new Error('Failed to fetch routing data');
+      // const data = await res.json();
+      // setRules(data.rules || []);
+      // setTeleGroups(data.teleGroups || []);
+      // setQueueData(data.queueData || []);
+
+      // Placeholder: initialize empty state for now
+      setRules([]);
+      setTeleGroups([]);
+      setQueueData([]);
+    } catch (err) {
+      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+      toast.error('Không thể tải dữ liệu routing');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoutingData();
+  }, []);
 
   const handleToggleRule = (ruleId) => {
+    const rule = rules.find((r) => r.id === ruleId);
     setRules((prev) =>
       prev.map((r) => (r.id === ruleId ? { ...r, status: !r.status } : r))
     );
+    toast.success(`Đã ${!rule?.status ? 'bật' : 'tắt'} quy tắc`);
   };
 
   const handleDeleteRule = (ruleId) => {
     setRules((prev) => prev.filter((r) => r.id !== ruleId));
+    toast.success('Đã xóa quy tắc thành công');
   };
 
   const handleSaveRule = (savedRule) => {
@@ -696,6 +827,7 @@ export default function RoutingModule() {
     }
     setEditingRule(null);
     setIsCreating(false);
+    toast.success('Đã lưu quy tắc thành công');
   };
 
   const handleAddNew = () => {
@@ -713,56 +845,71 @@ export default function RoutingModule() {
     setIsCreating(false);
   };
 
-  // Stats
+  // Stats (safe with empty arrays)
   const activeRules = rules.filter((r) => r.status).length;
-  const totalCapacity = teleGroups.reduce((sum, g) => sum + g.capacity, 0);
-  const currentLoad = teleGroups.reduce((sum, g) => sum + g.current, 0);
-  const onlineAgents = teleGroups.reduce((sum, g) => sum + g.agents.filter((a) => a.status === 'online').length, 0);
-  const busyAgents = teleGroups.reduce((sum, g) => sum + g.agents.filter((a) => a.status === 'busy').length, 0);
+  const totalCapacity = teleGroups.reduce((sum, g) => sum + (g.capacity || 0), 0);
+  const currentLoad = teleGroups.reduce((sum, g) => sum + (g.current || 0), 0);
+  const onlineAgents = teleGroups.reduce((sum, g) => sum + (g.agents?.filter((a) => a.status === 'online').length || 0), 0);
+  const busyAgents = teleGroups.reduce((sum, g) => sum + (g.agents?.filter((a) => a.status === 'busy').length || 0), 0);
 
   return (
     <div className="flex gap-4 h-[calc(100vh-140px)]">
       {/* ===== LEFT COLUMN: Quy tắc Routing ===== */}
       <div className="flex-1 flex flex-col min-w-0 gap-4 overflow-y-auto">
         {/* Stats strip */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Layers size={16} className="text-blue-500" />
+        {isLoading ? (
+          <CardGridSkeleton count={3} height="h-16" />
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+            <p className="text-sm text-red-600">{error}</p>
+            <button onClick={fetchRoutingData} className="mt-2 text-xs text-red-500 hover:text-red-700 underline">
+              Thử lại
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Layers size={16} className="text-blue-500" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-800">{activeRules}/{rules.length}</p>
+                <p className="text-[11px] text-gray-400">Quy tắc đang bật</p>
+              </div>
             </div>
-            <div>
-              <p className="text-lg font-bold text-gray-800">{activeRules}/{rules.length}</p>
-              <p className="text-[11px] text-gray-400">Quy tắc đang bật</p>
+            <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+                <TrendingUp size={16} className="text-green-500" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-800">{currentLoad}/{totalCapacity}</p>
+                <p className="text-[11px] text-gray-400">Lead đang xử lý</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
+                <Users size={16} className="text-purple-500" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-800">{onlineAgents} online</p>
+                <p className="text-[11px] text-gray-400">{busyAgents} đang bận</p>
+              </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
-              <TrendingUp size={16} className="text-green-500" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-800">{currentLoad}/{totalCapacity}</p>
-              <p className="text-[11px] text-gray-400">Lead đang xử lý</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
-              <Users size={16} className="text-purple-500" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-800">{onlineAgents} online</p>
-              <p className="text-[11px] text-gray-400">{busyAgents} đang bận</p>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Rule table */}
-        <RuleTable
-          rules={rules}
-          onToggle={handleToggleRule}
-          onEdit={handleEdit}
-          onDelete={handleDeleteRule}
-          onAddNew={handleAddNew}
-        />
+        {isLoading ? (
+          <RuleTableSkeleton />
+        ) : (
+          <RuleTable
+            rules={rules}
+            onToggle={handleToggleRule}
+            onEdit={handleEdit}
+            onDelete={handleDeleteRule}
+            onAddNew={handleAddNew}
+          />
+        )}
 
         {/* Rule builder */}
         <div className="card p-4">
@@ -801,15 +948,25 @@ export default function RoutingModule() {
             <User size={14} className="text-blue-500" />
             <h3 className="text-sm font-semibold text-gray-800">Quản lý nhóm Tele & Công suất</h3>
           </div>
-          <div className="space-y-3">
-            {teleGroups.map((group) => (
-              <TeleGroupCard key={group.id} group={group} />
-            ))}
-          </div>
+          {isLoading ? (
+            <TeleGroupSkeleton />
+          ) : teleGroups.length === 0 ? (
+            <EmptyState message="Chưa có dữ liệu" />
+          ) : (
+            <div className="space-y-3">
+              {teleGroups.map((group) => (
+                <TeleGroupCard key={group.id} group={group} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Queue */}
-        <QueueTable data={queueData} />
+        {isLoading ? (
+          <QueueTableSkeleton />
+        ) : (
+          <QueueTable data={queueData} />
+        )}
       </div>
     </div>
   );

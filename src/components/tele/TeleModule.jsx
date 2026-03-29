@@ -8,6 +8,8 @@ import BadgeStatus from '../common/BadgeStatus';
 import SearchInput from '../common/SearchInput';
 import PrimaryButton from '../common/PrimaryButton';
 import TeleCallPanel from './TeleCallPanel';
+import { TableSkeleton } from '../common/SkeletonLoader';
+import { useToast } from '../../contexts/ToastContext';
 
 // ===== MOCK DATA =====
 const teleLeadsData = [
@@ -100,7 +102,15 @@ export default function TeleModule() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [leads, setLeads] = useState(teleLeadsData);
+  const [isLoading, setIsLoading] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
+  const toast = useToast();
+
+  // Simulate API fetch
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
   const [callResult, setCallResult] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
   const [leadStatus, setLeadStatus] = useState('');
@@ -134,6 +144,7 @@ export default function TeleModule() {
     callTimerRef.current = setInterval(() => {
       setCallDuration((prev) => prev + 1);
     }, 1000);
+    toast.success(`Đang gọi cho ${lead.name}...`);
   };
 
   const handleEndCall = () => {
@@ -163,6 +174,7 @@ export default function TeleModule() {
           : l
       )
     );
+    toast.success(`Đã kết thúc cuộc gọi với ${selectedLead.name}`);
   };
 
   const handleToggleStatus = (leadId) => {
@@ -246,6 +258,9 @@ export default function TeleModule() {
 
         {/* Table */}
         <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <TableSkeleton rows={6} cols={7} />
+          ) : (
           <table className="w-full">
             <thead className="sticky top-0 bg-gray-50 z-10">
               <tr className="text-xs text-gray-500 uppercase tracking-wider">
@@ -380,6 +395,7 @@ export default function TeleModule() {
               )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 

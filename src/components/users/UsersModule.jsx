@@ -2,7 +2,7 @@
  * UsersModule - Trang Quản lý Người dùng & Phân quyền
  * Bảng user + Modal chỉnh sửa quyền + Modal quản lý vai trò
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -16,91 +16,9 @@ import {
   Shield,
   Users,
   ChevronDown,
+  Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
-
-// ===== MOCK DATA =====
-
-const usersInit = [
-  {
-    id: 1,
-    name: 'Nguyễn Thu Hà',
-    email: 'ha.nguyen@crm.vn',
-    phone: '0912 111 222',
-    role: 'Quản lý',
-    department: 'Kỹ thuật',
-    status: true,
-    avatar: 'NH',
-    avatarColor: 'from-blue-500 to-blue-600',
-  },
-  {
-    id: 2,
-    name: 'Lê Minh Tuấn',
-    email: 'tuan.le@crm.vn',
-    phone: '0913 222 333',
-    role: 'Nhân viên',
-    department: 'Kinh doanh',
-    status: true,
-    avatar: 'LT',
-    avatarColor: 'from-green-500 to-green-600',
-  },
-  {
-    id: 3,
-    name: 'Trần Văn Đạt',
-    email: 'dat.tran@crm.vn',
-    phone: '0914 333 444',
-    role: 'Nhân viên',
-    department: 'Marketing',
-    status: true,
-    avatar: 'TD',
-    avatarColor: 'from-purple-500 to-purple-600',
-  },
-  {
-    id: 4,
-    name: 'Phạm Thị Mai',
-    email: 'mai.pham@crm.vn',
-    phone: '0915 444 555',
-    role: 'Quản lý',
-    department: 'Kinh doanh',
-    status: false,
-    avatar: 'PM',
-    avatarColor: 'from-amber-500 to-amber-600',
-  },
-  {
-    id: 5,
-    name: 'Hoàng Văn Bảo',
-    email: 'bao.hoang@crm.vn',
-    phone: '0916 555 666',
-    role: 'Nhân viên',
-    department: 'Kỹ thuật',
-    status: true,
-    avatar: 'HB',
-    avatarColor: 'from-red-500 to-red-600',
-  },
-];
-
-const rolesInit = [
-  { id: 1, name: 'Quản trị viên', color: 'bg-red-100 text-red-700', count: 1 },
-  { id: 2, name: 'Quản lý', color: 'bg-blue-100 text-blue-700', count: 2 },
-  { id: 3, name: 'Nhân viên', color: 'bg-gray-100 text-gray-700', count: 3 },
-];
-
-const departments = ['Kỹ thuật', 'Kinh doanh', 'Marketing', 'Tư vấn', 'Hỗ trợ'];
-const roles = ['Quản lý', 'Nhân viên'];
-
-const allPermissions = [
-  { id: 'view_lead', label: 'Xem Lead', group: 'Lead' },
-  { id: 'edit_lead', label: 'Sửa Lead', group: 'Lead' },
-  { id: 'create_lead', label: 'Tạo Lead', group: 'Lead' },
-  { id: 'delete_lead', label: 'Xóa Lead', group: 'Lead' },
-  { id: 'transfer_lead', label: 'Chuyển Lead', group: 'Lead' },
-  { id: 'view_user', label: 'Xem Người dùng', group: 'Người dùng' },
-  { id: 'manage_user', label: 'Quản lý Người dùng', group: 'Người dùng' },
-  { id: 'view_report', label: 'Xem Báo cáo', group: 'Báo cáo' },
-  { id: 'export_report', label: 'Xuất Báo cáo', group: 'Báo cáo' },
-  { id: 'manage_role', label: 'Quản lý Vai trò', group: 'Hệ thống' },
-  { id: 'manage_setting', label: 'Quản lý Cài đặt', group: 'Hệ thống' },
-];
 
 // ===== SUB-COMPONENTS =====
 
@@ -131,18 +49,76 @@ function PermissionCheckbox({ label, checked, onChange }) {
   );
 }
 
+function EmptyState({ message = 'Chưa có dữ liệu' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-3">
+      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+        <Inbox size={28} className="text-gray-300" />
+      </div>
+      <p className="text-sm text-gray-400 font-medium">{message}</p>
+    </div>
+  );
+}
+
+function LoadingSkeleton({ rows = 5 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-50">
+          <td className="px-4 py-3">
+            <div className="w-4 h-4 rounded bg-gray-200 animate-pulse" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+              <div className="space-y-1">
+                <div className="w-28 h-3.5 bg-gray-200 rounded animate-pulse" />
+                <div className="w-20 h-2.5 bg-gray-100 rounded animate-pulse md:hidden" />
+              </div>
+            </div>
+          </td>
+          <td className="px-3 py-3 hidden md:table-cell">
+            <div className="w-40 h-3.5 bg-gray-200 rounded animate-pulse" />
+          </td>
+          <td className="px-3 py-3 hidden lg:table-cell">
+            <div className="w-28 h-3.5 bg-gray-200 rounded animate-pulse" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="w-16 h-5 bg-gray-200 rounded-full animate-pulse" />
+          </td>
+          <td className="px-3 py-3 hidden sm:table-cell">
+            <div className="w-20 h-5 bg-gray-200 rounded-lg animate-pulse" />
+          </td>
+          <td className="px-3 py-3 text-center">
+            <div className="w-16 h-5 bg-gray-200 rounded-full animate-pulse mx-auto" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="flex items-center justify-center gap-1">
+              <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+              <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+              <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
 function EditUserModal({ isOpen, user, onClose, allPermissions }) {
   const [scope, setScope] = useState('global');
   const [checkedPerms, setCheckedPerms] = useState(() => {
     // Default some permissions based on role
     const defaults = {};
-    allPermissions.forEach((p) => {
-      if (user?.role === 'Quản lý') {
-        defaults[p.id] = ['view_lead', 'edit_lead', 'create_lead', 'transfer_lead', 'view_user', 'view_report'].includes(p.id);
-      } else {
-        defaults[p.id] = ['view_lead', 'create_lead'].includes(p.id);
-      }
-    });
+    if (allPermissions && allPermissions.length > 0) {
+      allPermissions.forEach((p) => {
+        if (user?.role === 'Quản lý') {
+          defaults[p.id] = ['view_lead', 'edit_lead', 'create_lead', 'transfer_lead', 'view_user', 'view_report'].includes(p.id);
+        } else {
+          defaults[p.id] = ['view_lead', 'create_lead'].includes(p.id);
+        }
+      });
+    }
     return defaults;
   });
 
@@ -154,7 +130,7 @@ function EditUserModal({ isOpen, user, onClose, allPermissions }) {
     { value: 'tele', label: 'Chỉ nhóm Tele được gán', desc: 'Chỉ hoạt động với nhóm Tele được phân công' },
   ];
 
-  const permissionGroups = [...new Set(allPermissions.map((p) => p.group))];
+  const permissionGroups = allPermissions ? [...new Set(allPermissions.map((p) => p.group))] : [];
 
   const togglePerm = (id) => {
     setCheckedPerms((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -162,9 +138,9 @@ function EditUserModal({ isOpen, user, onClose, allPermissions }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-[640px] max-h-[88vh] flex flex-col overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-[640px] max-h-[88vh] flex flex-col overflow-hidden animate-modal-in">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-3">
@@ -287,11 +263,11 @@ function EditUserModal({ isOpen, user, onClose, allPermissions }) {
 function ManageRoleModal({ isOpen, onClose, existingRoles, allPermissions }) {
   const [roleName, setRoleName] = useState('');
   const [checkedPerms, setCheckedPerms] = useState({});
-  const [roles, setRoles] = useState(existingRoles);
+  const [roles, setRoles] = useState(existingRoles || []);
 
   if (!isOpen) return null;
 
-  const permissionGroups = [...new Set(allPermissions.map((p) => p.group))];
+  const permissionGroups = allPermissions ? [...new Set(allPermissions.map((p) => p.group))] : [];
 
   const togglePerm = (id) => {
     setCheckedPerms((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -312,9 +288,9 @@ function ManageRoleModal({ isOpen, onClose, existingRoles, allPermissions }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-[700px] max-h-[88vh] flex flex-col overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-[700px] max-h-[88vh] flex flex-col overflow-hidden animate-modal-in">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50">
           <div className="flex items-center gap-3">
@@ -426,7 +402,10 @@ function ManageRoleModal({ isOpen, onClose, existingRoles, allPermissions }) {
 // ===== MAIN COMPONENT =====
 
 export default function UsersModule() {
-  const [users, setUsers] = useState(usersInit);
+  // State with empty initial values
+  const [users, setUsers] = useState([]);
+  const [rolesInit, setRolesInit] = useState([]);
+  const [allPermissions, setAllPermissions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterDept, setFilterDept] = useState('');
@@ -435,12 +414,54 @@ export default function UsersModule() {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [activeUser, setActiveUser] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Filter options derived from loaded data
+  const filterRoles = rolesInit.map((r) => r.name);
+  const filterDepts = [...new Set(users.map((u) => u.department).filter(Boolean))];
+
+  // Fetch data placeholder
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Example: fetch('/api/users')
+        // const usersRes = await fetch('/api/users');
+        // const usersData = await usersRes.json();
+        // setUsers(usersData);
+
+        // Example: fetch('/api/roles')
+        // const rolesRes = await fetch('/api/roles');
+        // const rolesData = await rolesRes.json();
+        // setRolesInit(rolesData);
+
+        // Example: fetch('/api/permissions')
+        // const permsRes = await fetch('/api/permissions');
+        // const permsData = await permsRes.json();
+        // setAllPermissions(permsData);
+
+        // Placeholder: simulate API delay
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setUsers([]);
+        setRolesInit([]);
+        setAllPermissions([]);
+      } catch (err) {
+        setError(err.message || 'Failed to load data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const filteredUsers = users.filter((u) => {
     const matchSearch =
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.phone.includes(searchQuery);
+      (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.phone || '').includes(searchQuery);
     const matchRole = !filterRole || u.role === filterRole;
     const matchDept = !filterDept || u.department === filterDept;
     return matchSearch && matchRole && matchDept;
@@ -472,6 +493,8 @@ export default function UsersModule() {
     setSelectedRows(next);
   };
 
+  const activeCount = users.filter((u) => u.status).length;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -479,7 +502,7 @@ export default function UsersModule() {
         <div>
           <h1 className="text-lg font-bold text-gray-900">Quản trị Người dùng</h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            {users.length} người dùng · {users.filter((u) => u.status).length} đang hoạt động
+            {users.length} người dùng · {activeCount} đang hoạt động
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -541,7 +564,7 @@ export default function UsersModule() {
                     className="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer"
                   >
                     <option value="">Tất cả</option>
-                    {roles.map((r) => (
+                    {filterRoles.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
@@ -554,7 +577,7 @@ export default function UsersModule() {
                     className="w-full mt-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer"
                   >
                     <option value="">Tất cả</option>
-                    {departments.map((d) => (
+                    {filterDepts.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
@@ -600,91 +623,96 @@ export default function UsersModule() {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
-              <tr
-                key={user.id}
-                className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${
-                  selectedRows.has(user.id) ? 'bg-blue-50/30' : ''
-                }`}
-              >
-                <td className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.has(user.id)}
-                    onChange={() => handleSelect(user.id)}
-                    className="rounded border-gray-300 text-blue-500 focus:ring-blue-400 cursor-pointer"
-                  />
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${user.avatarColor} flex items-center justify-center flex-shrink-0`}>
-                      <span className="text-white text-xs font-bold">{user.avatar}</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">{user.name}</p>
-                      <p className="text-xs text-gray-400 md:hidden">{user.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-3 py-3 hidden md:table-cell">
-                  <span className="text-sm text-gray-600">{user.email}</span>
-                </td>
-                <td className="px-3 py-3 hidden lg:table-cell">
-                  <span className="text-sm text-gray-600">{user.phone}</span>
-                </td>
-                <td className="px-3 py-3">
-                  <RoleBadge role={user.role} />
-                </td>
-                <td className="px-3 py-3 hidden sm:table-cell">
-                  <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
-                    {user.department}
-                  </span>
-                </td>
-                <td className="px-3 py-3 text-center">
-                  <button
-                    onClick={() => toggleStatus(user.id)}
-                    className="inline-flex items-center gap-1"
-                    title={user.status ? 'Đang hoạt động' : 'Không hoạt động'}
-                  >
-                    {user.status ? (
-                      <ToggleRight size={24} className="text-green-500" />
-                    ) : (
-                      <ToggleLeft size={24} className="text-gray-300" />
-                    )}
-                    <span className={`text-xs font-medium ${user.status ? 'text-green-600' : 'text-gray-400'}`}>
-                      {user.status ? 'Active' : 'Inactive'}
-                    </span>
-                  </button>
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex items-center justify-center gap-1">
-                    <button
-                      onClick={() => handleEditUser(user)}
-                      className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
-                      title="Phân quyền / Sửa"
-                    >
-                      <Shield size={14} />
-                    </button>
-                    <button className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors" title="Sửa">
-                      <Edit2 size={14} />
-                    </button>
-                    <button className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Xóa">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <LoadingSkeleton rows={5} />
+            ) : error ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-16 text-center">
+                  <EmptyState message={error} />
                 </td>
               </tr>
-            ))}
-
-            {filteredUsers.length === 0 && (
+            ) : filteredUsers.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-16 text-center text-gray-400 text-sm">
-                  <div className="flex flex-col items-center gap-2">
-                    <Users size={32} className="text-gray-300" />
-                    <p>Không tìm thấy người dùng nào</p>
-                  </div>
+                  <EmptyState message={searchQuery || filterRole || filterDept ? 'Không tìm thấy người dùng nào' : 'Chưa có dữ liệu'} />
                 </td>
               </tr>
+            ) : (
+              filteredUsers.map((user) => (
+                <tr
+                  key={user.id}
+                  className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${
+                    selectedRows.has(user.id) ? 'bg-blue-50/30' : ''
+                  }`}
+                >
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.has(user.id)}
+                      onChange={() => handleSelect(user.id)}
+                      className="rounded border-gray-300 text-blue-500 focus:ring-blue-400 cursor-pointer"
+                    />
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${user.avatarColor} flex items-center justify-center flex-shrink-0`}>
+                        <span className="text-white text-xs font-bold">{user.avatar}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{user.name}</p>
+                        <p className="text-xs text-gray-400 md:hidden">{user.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 hidden md:table-cell">
+                    <span className="text-sm text-gray-600">{user.email}</span>
+                  </td>
+                  <td className="px-3 py-3 hidden lg:table-cell">
+                    <span className="text-sm text-gray-600">{user.phone}</span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <RoleBadge role={user.role} />
+                  </td>
+                  <td className="px-3 py-3 hidden sm:table-cell">
+                    <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
+                      {user.department}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <button
+                      onClick={() => toggleStatus(user.id)}
+                      className="inline-flex items-center gap-1"
+                      title={user.status ? 'Đang hoạt động' : 'Không hoạt động'}
+                    >
+                      {user.status ? (
+                        <ToggleRight size={24} className="text-green-500" />
+                      ) : (
+                        <ToggleLeft size={24} className="text-gray-300" />
+                      )}
+                      <span className={`text-xs font-medium ${user.status ? 'text-green-600' : 'text-gray-400'}`}>
+                        {user.status ? 'Active' : 'Inactive'}
+                      </span>
+                    </button>
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => handleEditUser(user)}
+                        className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
+                        title="Phân quyền / Sửa"
+                      >
+                        <Shield size={14} />
+                      </button>
+                      <button className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors" title="Sửa">
+                        <Edit2 size={14} />
+                      </button>
+                      <button className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Xóa">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>

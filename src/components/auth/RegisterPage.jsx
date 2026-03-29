@@ -70,7 +70,7 @@ function CRMIllustration() {
       </div>
 
       <div className="absolute bottom-8 left-0 right-0 text-center">
-        <p className="text-white/40 text-xs">FPT Telecom CRM · Phiên bản 2026</p>
+        <p className="text-white/40 text-xs">CRM CRM  · Phiên bản 2026</p>
       </div>
     </div>
   );

@@ -1,12 +1,15 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import RootLayout from './components/layout/RootLayout';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import TeleModule from './components/tele/TeleModule';
+import TelemarketingPage from './components/tele/TelemarketingPage';
 import RoutingModule from './components/routing/RoutingModule';
 import ServicesModule from './components/services/ServicesModule';
 import ChatModule from './components/chat/ChatModule';
+import MultiChannelChatPage from './components/chat/MultiChannelChatPage';
 import ChannelsModule from './components/channels/ChannelsModule';
 import UsersModule from './components/users/UsersModule';
 import ManagementLeadPage from './components/leads/ManagementLeadPage';
@@ -18,7 +21,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <ToastProvider>
+          <Routes>
         {/* Login - outside RootLayout (no sidebar/header) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -30,13 +34,14 @@ export default function App() {
           <Route path="/routing" element={<RoutingPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/channels" element={<ChannelsPage />} />
-          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chat" element={<MultiChannelChatPage />} />
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/permissions" element={<PermissionsPage />} />
-          <Route path="/tele" element={<TeleModule />} />
+          <Route path="/tele" element={<TelemarketingPage />} />
         </Route>
       </Routes>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

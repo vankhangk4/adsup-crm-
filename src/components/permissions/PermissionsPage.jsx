@@ -2,7 +2,7 @@
  * PermissionsPage - Trang Quản lý Vai trò & Phân quyền
  * Route: /permissions
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Edit2,
@@ -15,9 +15,9 @@ import {
   Lock,
   Users,
   CheckSquare,
+  Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
-import { rolesData, permissionGroups } from '../../data/mockPermissionData';
 
 // ===== SUB-COMPONENTS =====
 
@@ -36,14 +36,14 @@ function PermissionCheckbox({ label, checked, onChange, disabled = false }) {
   );
 }
 
-function RoleModal({ isOpen, onClose, role, mode }) {
+function RoleModal({ isOpen, onClose, role, mode, permissionGroups = [] }) {
   const isEdit = mode === 'edit';
   const [roleName, setRoleName] = useState(role?.name || '');
   const [roleDesc, setRoleDesc] = useState(role?.description || '');
   const [checkedPerms, setCheckedPerms] = useState(() => {
     const defaults = {};
     permissionGroups.forEach((g) =>
-      g.permissions.forEach((p) => {
+      (g.permissions || []).forEach((p) => {
         defaults[p.id] = role?.permissions?.includes(p.id) || false;
       })
     );
@@ -66,13 +66,15 @@ function RoleModal({ isOpen, onClose, role, mode }) {
     });
   };
 
+  const totalPermissions = permissionGroups.reduce((sum, g) => sum + (g.permissions || []).length, 0);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-[700px] max-h-[88vh] flex flex-col overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-[700px] max-h-[88vh] flex flex-col overflow-hidden animate-modal-in">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-3">
@@ -133,13 +135,13 @@ function RoleModal({ isOpen, onClose, role, mode }) {
                 Quyền hạn
               </h4>
               <span className="text-[11px] text-gray-400">
-                {Object.values(checkedPerms).filter(Boolean).length} / {permissionGroups.reduce((sum, g) => sum + g.permissions.length, 0)} đã chọn
+                {Object.values(checkedPerms).filter(Boolean).length} / {totalPermissions} đã chọn
               </span>
             </div>
 
             <div className="space-y-5">
               {permissionGroups.map((group) => {
-                const groupPerms = group.permissions;
+                const groupPerms = group.permissions || [];
                 const groupChecked = groupPerms.filter((p) => checkedPerms[p.id]).length;
                 const allChecked = groupChecked === groupPerms.length;
                 const someChecked = groupChecked > 0 && groupChecked < groupPerms.length;
@@ -202,19 +204,126 @@ function RoleModal({ isOpen, onClose, role, mode }) {
   );
 }
 
+// ===== EMPTY STATE =====
+
+function EmptyState({ message = 'Chưa có dữ liệu' }) {
+  return (
+    <tr>
+      <td colSpan={6} className="px-4 py-16 text-center text-gray-400 text-sm">
+        <div className="flex flex-col items-center gap-2">
+          <Inbox size={32} className="text-gray-300" />
+          <p>{message}</p>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ===== SKELETON LOADER =====
+
+function TableSkeleton({ rows = 5 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-50">
+          {/* ID */}
+          <td className="px-4 py-4">
+            <div className="h-3 w-6 bg-gray-200 rounded animate-pulse" />
+          </td>
+          {/* Role */}
+          <td className="px-3 py-4">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-gray-200 animate-pulse" />
+              <div className="space-y-1">
+                <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+              </div>
+            </div>
+          </td>
+          {/* Description */}
+          <td className="px-3 py-4 hidden md:table-cell">
+            <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+          </td>
+          {/* Permissions */}
+          <td className="px-3 py-4 hidden lg:table-cell">
+            <div className="flex flex-wrap gap-1">
+              <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 w-14 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 w-10 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </td>
+          {/* User count */}
+          <td className="px-3 py-4 text-center">
+            <div className="h-3 w-6 bg-gray-200 rounded animate-pulse mx-auto" />
+          </td>
+          {/* Actions */}
+          <td className="px-3 py-4">
+            <div className="flex items-center justify-center gap-1">
+              <div className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+              <div className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
 // ===== MAIN COMPONENT =====
 
 export default function PermissionsPage() {
-  const [roles, setRoles] = useState(rolesData);
+  // API placeholder: fetch('/api/permissions/roles') → { roles: [...], permissionGroups: [...] }
+  // API placeholder: fetch('/api/permissions/groups') → permissionGroups
+  const [roles, setRoles] = useState([]);
+  const [permissionGroups, setPermissionGroups] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeRole, setActiveRole] = useState(null);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Example: const res = await fetch('/api/permissions/roles');
+      // Example: if (!res.ok) throw new Error('Failed to fetch roles');
+      // Example: const data = await res.json();
+      // Example: setRoles(data.roles || []);
+      // Example: setPermissionGroups(data.permissionGroups || []);
+
+      // TODO: Thay bằng API thật
+      // const rolesRes = await fetch('/api/permissions/roles');
+      // if (!rolesRes.ok) throw new Error('Failed to fetch roles');
+      // const rolesData = await rolesRes.json();
+      // setRoles(rolesData.roles || []);
+
+      // const groupsRes = await fetch('/api/permissions/groups');
+      // if (!groupsRes.ok) throw new Error('Failed to fetch permission groups');
+      // const groupsData = await groupsRes.json();
+      // setPermissionGroups(groupsData.permissionGroups || []);
+
+      // Tạm thời giữ rỗng trước khi backend ghép vào
+      setRoles([]);
+      setPermissionGroups([]);
+    } catch (err) {
+      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filteredRoles = roles.filter((r) =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const totalUsers = roles.reduce((sum, r) => sum + r.userCount, 0);
+  const totalPermissions = permissionGroups.reduce((sum, g) => sum + (g.permissions || []).length, 0);
 
   const handleOpenCreate = () => {
     setActiveRole(null);
@@ -235,7 +344,7 @@ export default function PermissionsPage() {
         <div>
           <h1 className="text-lg font-bold text-gray-900">Quản lý Vai trò & Phân quyền</h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            {roles.length} vai trò · {roles.reduce((sum, r) => sum + r.userCount, 0)} người dùng được gán
+            {roles.length} vai trò · {totalUsers} người dùng được gán
           </p>
         </div>
         <PrimaryButton icon={Plus} onClick={handleOpenCreate}>
@@ -247,9 +356,9 @@ export default function PermissionsPage() {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Tổng vai trò', value: roles.length, color: 'blue' },
-          { label: 'Người dùng', value: roles.reduce((sum, r) => sum + r.userCount, 0), color: 'green' },
+          { label: 'Người dùng', value: totalUsers, color: 'green' },
           { label: 'Nhóm quyền', value: permissionGroups.length, color: 'purple' },
-          { label: 'Quyền hạn', value: permissionGroups.reduce((sum, g) => sum + g.permissions.length, 0), color: 'amber' },
+          { label: 'Quyền hạn', value: totalPermissions, color: 'amber' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl bg-${stat.color}-50 flex items-center justify-center`}>
@@ -262,6 +371,13 @@ export default function PermissionsPage() {
           </div>
         ))}
       </div>
+
+      {/* Error state */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Roles Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -292,103 +408,98 @@ export default function PermissionsPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredRoles.map((role) => {
-              const permLabels = permissionGroups
-                .flatMap((g) => g.permissions)
-                .filter((p) => role.permissions.includes(p.id))
-                .slice(0, 3)
-                .map((p) => p.label);
+            {isLoading ? (
+              <TableSkeleton rows={5} />
+            ) : filteredRoles.length === 0 ? (
+              <EmptyState message={searchQuery ? 'Không tìm thấy vai trò nào' : 'Chưa có dữ liệu'} />
+            ) : (
+              filteredRoles.map((role) => {
+                const permLabels = permissionGroups
+                  .flatMap((g) => g.permissions || [])
+                  .filter((p) => role.permissions.includes(p.id))
+                  .slice(0, 3)
+                  .map((p) => p.label);
 
-              return (
-                <tr
-                  key={role.id}
-                  className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors"
-                >
-                  {/* ID */}
-                  <td className="px-4 py-4">
-                    <span className="text-xs font-mono text-gray-400">#{role.id}</span>
-                  </td>
+                return (
+                  <tr
+                    key={role.id}
+                    className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors"
+                  >
+                    {/* ID */}
+                    <td className="px-4 py-4">
+                      <span className="text-xs font-mono text-gray-400">#{role.id}</span>
+                    </td>
 
-                  {/* Role */}
-                  <td className="px-3 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-9 h-9 rounded-xl ${role.color.replace('text-', 'bg-').replace('bg-', 'bg-')} bg-opacity-20 flex items-center justify-center`}>
-                        <Shield size={15} className={role.color} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-gray-800">{role.name}</span>
-                          {role.isSystem && (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
-                              <Lock size={8} />
-                              System
-                            </span>
-                          )}
+                    {/* Role */}
+                    <td className="px-3 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-9 h-9 rounded-xl ${role.color.replace('text-', 'bg-').replace('bg-', 'bg-')} bg-opacity-20 flex items-center justify-center`}>
+                          <Shield size={15} className={role.color} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-gray-800">{role.name}</span>
+                            {role.isSystem && (
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                                <Lock size={8} />
+                                System
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Description */}
-                  <td className="px-3 py-4 hidden md:table-cell">
-                    <span className="text-sm text-gray-500">{role.description}</span>
-                  </td>
+                    {/* Description */}
+                    <td className="px-3 py-4 hidden md:table-cell">
+                      <span className="text-sm text-gray-500">{role.description}</span>
+                    </td>
 
-                  {/* Permissions preview */}
-                  <td className="px-3 py-4 hidden lg:table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {permLabels.map((l) => (
-                        <span key={l} className="text-[10px] text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
-                          {l}
-                        </span>
-                      ))}
-                      {role.permissions.length > 3 && (
-                        <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
-                          +{role.permissions.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </td>
+                    {/* Permissions preview */}
+                    <td className="px-3 py-4 hidden lg:table-cell">
+                      <div className="flex flex-wrap gap-1">
+                        {permLabels.map((l) => (
+                          <span key={l} className="text-[10px] text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {l}
+                          </span>
+                        ))}
+                        {role.permissions.length > 3 && (
+                          <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
+                            +{role.permissions.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                  {/* User count */}
-                  <td className="px-3 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <Users size={12} className="text-gray-400" />
-                      <span className="text-sm font-medium text-gray-700">{role.userCount}</span>
-                    </div>
-                  </td>
+                    {/* User count */}
+                    <td className="px-3 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Users size={12} className="text-gray-400" />
+                        <span className="text-sm font-medium text-gray-700">{role.userCount}</span>
+                      </div>
+                    </td>
 
-                  {/* Actions */}
-                  <td className="px-3 py-4">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => handleOpenEdit(role)}
-                        className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
-                        title="Sửa"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                        title="Xóa"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-
-            {filteredRoles.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-16 text-center text-gray-400 text-sm">
-                  <div className="flex flex-col items-center gap-2">
-                    <Shield size={32} className="text-gray-300" />
-                    <p>Không tìm thấy vai trò nào</p>
-                  </div>
-                </td>
-              </tr>
+                    {/* Actions */}
+                    <td className="px-3 py-4">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleOpenEdit(role)}
+                          className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
+                          title="Sửa"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Xóa"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -400,6 +511,7 @@ export default function PermissionsPage() {
         onClose={() => setIsModalOpen(false)}
         role={activeRole}
         mode={modalMode}
+        permissionGroups={permissionGroups}
       />
     </div>
   );

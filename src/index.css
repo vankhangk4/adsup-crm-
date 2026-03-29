@@ -36,6 +36,16 @@ body {
   background: #9CA3AF;
 }
 
+/* ===== CHAT CARD STYLES ===== */
+.chat-card.active {
+  background-color: #eff6ff;
+  border-left: 4px solid #3182ce;
+}
+
+.chat-card:hover:not(.active) {
+  background-color: #f8fafc;
+}
+
 @layer components {
   .btn-primary {
     @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center gap-2;
@@ -64,4 +74,67 @@ body {
   .table-row {
     @apply border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150;
   }
+}
+
+/* ===== UX ANIMATIONS ===== */
+
+/* Modal: fade + scale from center */
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modal-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.95) translateY(8px); }
+}
+
+/* Dropdown: fade + slide from top */
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Toast: slide from right */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Utility classes for animations */
+.animate-modal-in {
+  animation: modal-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-modal-out {
+  animation: modal-out 0.2s ease-in forwards;
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 0.2s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better focus ring */
+*:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+  border-radius: 4px;
 }

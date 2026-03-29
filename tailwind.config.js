@@ -1,40 +1,32 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+        sidebar: '#1E293B',
+        'sidebar-hover': '#334155',
+        'sidebar-active': '#3B82F6',
+        primary: '#3B82F6',
+        'primary-dark': '#2563EB',
+        success: '#10B981',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        gray: {
+          50: '#F9FAFB',
+          100: '#F3F4F6',
+          200: '#E5E7EB',
+          300: '#D1D5DB',
+          400: '#9CA3AF',
+          500: '#6B7280',
+          600: '#4B5563',
+          700: '#374151',
+          800: '#1F2937',
+          900: '#111827',
         },
-        sidebar: {
-          bg: '#1e293b',
-          hover: '#334155',
-          active: '#3b82f6',
-          text: '#cbd5e1',
-          border: '#334155',
-        },
-        surface: {
-          bg: '#f8fafc',
-          card: '#ffffff',
-          hover: '#f1f5f9',
-        },
-        success: '#10b981',
-        warning: '#f59e0b',
-        danger: '#ef4444',
-        info: '#06b6d4',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

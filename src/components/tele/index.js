@@ -1,6 +1,0 @@
-export { default as TeleModule } from './TeleModule'
-export { default as TeleDashboard } from './TeleDashboard'
-export { default as TeleLeadList } from './TeleLeadList'
-export { default as TeleLeadDetail } from './TeleLeadDetail'
-export { default as TeleCalendar } from './TeleCalendar'
-export { default as TeleScripts } from './TeleScripts'

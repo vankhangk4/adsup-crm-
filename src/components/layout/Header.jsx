@@ -1,178 +1,160 @@
-import { useState, useRef, useEffect } from 'react'
-import { Bell, Search, ChevronDown, LogOut, User, Settings } from 'lucide-react'
-import { currentUser, notifications } from '../../data/mockData'
+/**
+ * Header - Top bar màu trắng
+ * Chứa: Mobile menu toggle, page title, search, notifications, avatar
+ */
+import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Bell, ChevronDown, Menu, Search } from 'lucide-react';
+import SearchInput from '../common/SearchInput';
 
-const moduleTitles = {
-  1: 'Người dùng & Phân quyền',
-  2: 'Quản trị Page',
-  3: 'Hội thoại Page',
-  4: 'Khách hàng & Lead',
-  5: 'Quản trị Dịch vụ',
-  6: 'Quản trị Kịch bản',
-  7: 'Cấp số & Chia số',
-  8: 'Module Tele',
-  9: 'Phân quyền Chi tiết',
-  10: 'Quản trị Hệ thống',
-}
+const PAGE_TITLES = {
+  '/': 'Bảng điều khiển',
+  '/leads': 'Quản lý Lead',
+  '/routing': 'Routing',
+  '/services': 'Dịch vụ',
+  '/chat': 'Chat đa kênh',
+  '/departments': 'Phòng ban',
+  '/users': 'Quản trị người dùng',
+  '/permissions': 'Phân quyền',
+};
 
-export default function Header({ activeModule, onToggleSidebar, sidebarCollapsed }) {
-  const [showNotif, setShowNotif] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const notifRef = useRef(null)
-  const userMenuRef = useRef(null)
+export default function Header({ onMobileMenuToggle }) {
+  const location = useLocation();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const pageTitle = PAGE_TITLES[location.pathname] || 'CRM';
 
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handler = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotif(false)
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+  const notifications = [
+    { id: 1, text: 'Có 5 Lead mới chưa được phân công', time: '5 phút trước', unread: true },
+    { id: 2, text: 'Lê Minh Tuấn vừa cập nhật trạng thái Lead #128', time: '15 phút trước', unread: true },
+    { id: 3, text: 'Báo cáo tuần 12 đã sẵn sàng', time: '1 giờ trước', unread: false },
+  ];
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-20">
-      {/* Left: Toggle + Breadcrumb */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onToggleSidebar}
-          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
-          aria-label="Toggle menu"
-        >
-          <svg width="20" height="16" viewBox="0 0 20 16" fill="none" className="text-slate-600">
-            <path d="M1 1h18M1 8h18M1 15h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">CRM</span>
-          <span className="text-slate-300">/</span>
-          <h1 className="text-sm font-semibold text-slate-800">{moduleTitles[activeModule]}</h1>
+    <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+      <div className="flex items-center justify-between px-4 lg:px-6 py-3">
+        {/* Left: Mobile menu + Page Title */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onMobileMenuToggle}
+            className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Menu size={20} />
+          </button>
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">{pageTitle}</h1>
+            <p className="text-xs text-gray-400 hidden sm:block">
+              Chào buổi sáng, Admin
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Center: Search */}
-      <div className="hidden md:flex flex-1 max-w-md mx-8">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input
-            type="text"
-            placeholder="Tìm kiếm khách hàng, lead, số điện thoại..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-slate-100 border-0 rounded-lg
-                       focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white
-                       placeholder:text-slate-400 transition-all"
+        {/* Center: Search (Desktop) */}
+        <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <SearchInput
+            placeholder="Tìm kiếm Lead, khách hàng..."
+            size="sm"
           />
         </div>
-      </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-2">
-        {/* Notification */}
-        <div className="relative" ref={notifRef}>
-          <button
-            onClick={() => setShowNotif(!showNotif)}
-            className="relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            <Bell size={20} className="text-slate-600" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+          {/* Search icon mobile */}
+          <button className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+            <Search size={20} />
           </button>
 
-          {showNotif && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
-              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-800">Thông báo</span>
-                <span className="text-xs text-primary-600 font-medium cursor-pointer hover:underline">
-                  Đánh dấu đã đọc
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount}
                 </span>
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${
-                      !notif.read ? 'bg-blue-50/50' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {!notif.read && (
-                        <span className="w-2 h-2 bg-primary-500 rounded-full mt-1.5 flex-shrink-0" />
-                      )}
-                      <div className={!notif.read ? '' : 'ml-5'}>
-                        <p className="text-sm font-medium text-slate-800">{notif.title}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{notif.message}</p>
-                        <p className="text-[11px] text-slate-400 mt-1">{notif.time}</p>
-                      </div>
-                    </div>
+              )}
+            </button>
+
+            {/* Notifications Dropdown */}
+            {showNotifications && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowNotifications(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-800">Thông báo</h3>
                   </div>
-                ))}
-              </div>
-              <div className="px-4 py-2.5 bg-slate-50 text-center">
-                <button className="text-xs text-primary-600 font-medium hover:underline">
-                  Xem tất cả thông báo
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${
+                          n.unread ? 'bg-blue-50/50' : ''
+                        }`}
+                      >
+                        <p className="text-sm text-gray-800 leading-snug">{n.text}</p>
+                        <p className="text-xs text-gray-400 mt-1">{n.time}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-4 py-2.5 text-center border-t border-gray-100">
+                    <button className="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                      Xem tất cả thông báo
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
-        {/* User Menu */}
-        <div className="relative" ref={userMenuRef}>
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.name}
-              className="w-7 h-7 rounded-full object-cover ring-2 ring-slate-200"
-            />
-            <div className="hidden sm:flex flex-col items-start">
-              <span className="text-sm font-medium text-slate-800 leading-tight">
-                {currentUser.name}
-              </span>
-              <span className="text-[11px] text-slate-400 leading-tight">
-                Nhân viên Tele
-              </span>
-            </div>
-            <ChevronDown size={14} className="text-slate-400 hidden sm:block" />
-          </button>
+          {/* User Avatar */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">AD</span>
+              </div>
+              <ChevronDown size={14} className="text-gray-400 hidden sm:block" />
+            </button>
 
-          {showUserMenu && (
-            <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
-              <div className="px-4 py-3 border-b border-slate-100">
-                <p className="text-sm font-semibold text-slate-800">{currentUser.name}</p>
-                <p className="text-xs text-slate-500">{currentUser.email}</p>
-              </div>
-              <div className="py-1">
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                  <User size={16} className="text-slate-400" />
-                  Hồ sơ cá nhân
-                </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                  <Settings size={16} className="text-slate-400" />
-                  Cài đặt
-                </button>
-              </div>
-              <div className="border-t border-slate-100 py-1">
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                  <LogOut size={16} />
-                  Đăng xuất
-                </button>
-              </div>
-            </div>
-          )}
+            {/* User Dropdown */}
+            {showUserMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowUserMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="font-semibold text-gray-800">Admin</p>
+                    <p className="text-xs text-gray-400">admin@fpt.vn</p>
+                  </div>
+                  <div className="py-1">
+                    {['Hồ sơ cá nhân', 'Cài đặt', 'Đăng xuất'].map((item) => (
+                      <button
+                        key={item}
+                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </header>
-  )
+  );
 }

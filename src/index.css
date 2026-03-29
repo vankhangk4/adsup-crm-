@@ -1,265 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-@layer base {
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #F3F4F6;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  html,
-  body,
-  #root {
-    height: 100%;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 14px;
-    color: #1C1E21;
-    background-color: #F0F2F5;
-  }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-  ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-  }
+::-webkit-scrollbar-track {
+  background: #F3F4F6;
+}
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 3px;
+}
 
-  ::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 10px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
 }
 
 @layer components {
-  .tele-sidebar {
-    background-color: #1C1E21;
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center gap-2;
   }
 
-  .tele-sidebar-item {
-    @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer;
-    color: #B4B4B4;
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm border border-gray-200 transition-colors duration-200 flex items-center gap-2;
   }
 
-  .tele-sidebar-item:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #fff;
+  .btn-danger {
+    @apply bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center gap-2;
   }
 
-  .tele-sidebar-item.active {
-    background-color: #2563EB;
-    color: #fff;
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
   }
 
-  .tele-sidebar-item.active svg {
-    color: #fff;
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
   }
 
-  .tele-sidebar-group-title {
-    @apply px-3 py-2 text-[11px] font-semibold uppercase tracking-wider;
-    color: #65676B;
+  .table-header {
+    @apply bg-gray-50 text-gray-600 text-xs font-semibold uppercase tracking-wider;
   }
 
-  .tele-card {
-    @apply bg-white rounded-lg shadow-sm;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-    border: none;
-  }
-
-  .tele-card-hover {
-    @apply tele-card transition-all duration-150;
-  }
-
-  .tele-card-hover:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
-
-  .tele-btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-150 cursor-pointer;
-  }
-
-  .tele-btn-primary {
-    @apply tele-btn bg-[#2563EB] text-white;
-  }
-
-  .tele-btn-primary:hover {
-    background-color: #1d4ed8;
-  }
-
-  .tele-btn-secondary {
-    @apply tele-btn bg-white text-[#1C1E21] border border-[#DADDE1];
-  }
-
-  .tele-btn-secondary:hover {
-    background-color: #F2F2F2;
-  }
-
-  .tele-btn-green {
-    @apply tele-btn bg-[#00A060] text-white;
-  }
-
-  .tele-btn-green:hover {
-    background-color: #008554;
-  }
-
-  .tele-input {
-    @apply w-full px-3 py-2 text-sm bg-white border border-[#DADDE1] rounded-lg;
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-
-  .tele-input:focus {
-    border-color: #2563EB;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-  }
-
-  .tele-input::placeholder {
-    color: #B4B4B4;
-  }
-
-  .tele-select {
-    @apply tele-input cursor-pointer appearance-none pr-8;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2365676B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-  }
-
-  .tele-badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium;
-  }
-
-  .tele-badge-green {
-    @apply tele-badge text-[#00A060];
-    background-color: #E8F8EF;
-  }
-
-  .tele-badge-gray {
-    @apply tele-badge text-[#65676B];
-    background-color: #F0F2F5;
-  }
-
-  .tele-badge-blue {
-    @apply tele-badge text-[#2563EB];
-    background-color: #EBF2FF;
-  }
-
-  .tele-badge-orange {
-    @apply tele-badge text-[#F57C00];
-    background-color: #FFF3E0;
-  }
-
-  .tele-badge-red {
-    @apply tele-badge text-[#D32F2F];
-    background-color: #FFEBEE;
-  }
-
-  .tele-badge-purple {
-    @apply tele-badge text-[#7C4DFF];
-    background-color: #F3E8FF;
-  }
-
-  .tele-tab {
-    @apply px-4 py-2.5 text-sm font-medium rounded-lg transition-all;
-    color: #65676B;
-  }
-
-  .tele-tab:hover {
-    background-color: #F0F2F5;
-    color: #1C1E21;
-  }
-
-  .tele-tab.active {
-    background-color: #2563EB;
-    color: #fff;
-  }
-
-  .tele-tab-bar {
-    @apply flex items-center gap-1 p-1 rounded-lg;
-    background-color: #F0F2F5;
-  }
-
-  .tele-divider {
-    border: none;
-    border-top: 1px solid #DADDE1;
-  }
-
-  .tele-lead-row {
-    @apply border-b transition-colors cursor-pointer;
-    border-color: #F0F2F5;
-  }
-
-  .tele-lead-row:hover {
-    background-color: #F7F8FA;
-  }
-
-  .tele-lead-row.selected {
-    background-color: #EBF2FF;
-  }
-
-  .tele-lead-row.overdue {
-    background-color: #FFEBEE;
-  }
-
-  .tele-lead-row.due-soon {
-    background-color: #FFF8E1;
-  }
-
-  .tele-stat-card {
-    @apply tele-card p-4 cursor-pointer transition-all duration-150;
-  }
-
-  .tele-stat-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-  }
-
-  .tele-stat-card.active {
-    box-shadow: 0 0 0 2px #2563EB;
-  }
-
-  .tele-detail-tab {
-    @apply px-4 py-2.5 text-sm font-medium transition-colors border-b-2;
-  }
-
-  .tele-detail-tab.active {
-    color: #2563EB;
-    border-bottom-color: #2563EB;
-  }
-
-  .tele-detail-tab:not(.active) {
-    color: #65676B;
-    border-bottom-color: transparent;
-  }
-
-  .tele-cal-day {
-    @apply flex flex-col items-center justify-start pt-2 rounded-lg transition-all;
-    min-height: 70px;
-  }
-
-  .tele-cal-day:hover:not(.disabled) {
-    background-color: #F0F2F5;
-  }
-
-  .tele-cal-day.selected {
-    background-color: #EBF2FF;
-    box-shadow: inset 0 0 0 2px #2563EB;
-  }
-
-  .tele-cal-day.today {
-    background-color: #E8F0FE;
-  }
-
-  .tele-cal-day.disabled {
-    cursor: default;
-    opacity: 0.4;
+  .table-row {
+    @apply border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150;
   }
 }

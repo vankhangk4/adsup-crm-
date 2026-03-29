@@ -37,3 +37,8 @@ dist-ssr
 .vite/
 .env
 .env.*
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

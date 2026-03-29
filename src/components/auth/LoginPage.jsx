@@ -56,10 +56,10 @@ function LoginForm() {
 
     setIsLoading(true);
     try {
-      login(email, password);
+      await login(email, password);
       navigate('/');
     } catch (err) {
-      setAuthError(err.message);
+      setAuthError(err.response?.data?.detail || err.message);
     } finally {
       setIsLoading(false);
     }

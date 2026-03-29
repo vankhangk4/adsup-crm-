@@ -18,6 +18,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
+import * as permissionService from '../../services/permissionService';
 
 // ===== SUB-COMPONENTS =====
 
@@ -286,28 +287,43 @@ export default function PermissionsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Example: const res = await fetch('/api/permissions/roles');
-      // Example: if (!res.ok) throw new Error('Failed to fetch roles');
-      // Example: const data = await res.json();
-      // Example: setRoles(data.roles || []);
-      // Example: setPermissionGroups(data.permissionGroups || []);
+      const [rolesRes, permsRes] = await Promise.all([
+        permissionService.listRoles({ page_size: 100 }),
+        permissionService.listPermissions({ page_size: 100 }),
+      ]);
 
-      // TODO: Thay bằng API thật
-      // const rolesRes = await fetch('/api/permissions/roles');
-      // if (!rolesRes.ok) throw new Error('Failed to fetch roles');
-      // const rolesData = await rolesRes.json();
-      // setRoles(rolesData.roles || []);
+      const rolesData = rolesRes?.data?.items || rolesRes?.data || rolesRes || [];
+      const permsData = permsRes?.data?.items || permsRes?.data || permsRes || [];
 
-      // const groupsRes = await fetch('/api/permissions/groups');
-      // if (!groupsRes.ok) throw new Error('Failed to fetch permission groups');
-      // const groupsData = await groupsRes.json();
-      // setPermissionGroups(groupsData.permissionGroups || []);
+      // Normalize roles
+      const normalizedRoles = rolesData.map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description || '',
+        permissions: [],
+        userCount: 0,
+        color: 'bg-green-100 text-green-700',
+        isSystem: false,
+      }));
 
-      // Tạm thời giữ rỗng trước khi backend ghép vào
-      setRoles([]);
-      setPermissionGroups([]);
+      // Normalize permissions into groups
+      const permGroupsMap = {};
+      permsData.forEach((p) => {
+        const groupName = p.module || 'Chung';
+        if (!permGroupsMap[groupName]) {
+          permGroupsMap[groupName] = { group: groupName, permissions: [] };
+        }
+        permGroupsMap[groupName].permissions.push({
+          id: p.id,
+          code: p.code,
+          label: p.name,
+        });
+      });
+
+      setRoles(normalizedRoles);
+      setPermissionGroups(Object.values(permGroupsMap));
     } catch (err) {
-      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+      setError(err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
     } finally {
       setIsLoading(false);
     }

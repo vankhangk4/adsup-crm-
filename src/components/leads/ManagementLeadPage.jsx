@@ -3,7 +3,7 @@
  * Route: /leads
  * Sử dụng MasterLayout + BadgeStatus + PrimaryButton + SearchInput
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Phone,
   Edit2,
@@ -21,6 +21,7 @@ import PrimaryButton from '../common/PrimaryButton';
 import SearchInput from '../common/SearchInput';
 import { TableSkeleton } from '../common/SkeletonLoader';
 import { useToast } from '../../contexts/ToastContext';
+import leadService from '../../services/leadService';
 
 export default function ManagementLeadPage() {
   // Data state
@@ -38,45 +39,155 @@ export default function ManagementLeadPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [selectedRows, setSelectedRows] = useState(new Set());
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalLeads, setTotalLeads] = useState(0);
+  const [pageSize] = useState(50);
+
   // Async state
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState(null);
+
+  // Search debounce ref
+  const searchDebounceRef = useRef(null);
 
   const toast = useToast();
 
-  // Fetch all data from API
-  const fetchData = async () => {
+  // Fetch leads from API
+  const fetchLeads = useCallback(async (params = {}) => {
     setIsLoading(true);
     setError(null);
     try {
-      // Example: fetch('/api/leads')
-      // const res = await fetch('/api/leads');
-      // if (!res.ok) throw new Error('Failed to fetch leads');
-      // const data = await res.json();
-
-      // Example: fetch('/api/leads/meta') for filter dropdowns
-      // const metaRes = await fetch('/api/leads/meta');
-      // const meta = await metaRes.json();
-
-      // Placeholder: simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // After real API integration, set data like:
-      // setLeads(data.leads || []);
-      // setLeadStatuses(data.statuses || []);
-      // setLeadSources(data.sources || []);
-      // setLeadServices(data.services || []);
+      const res = await leadService.list({ page: 1, page_size: 50, ...params });
+      const result = res.data?.data || {};
+      setLeads(result.items || []);
+      setTotalLeads(result.total || 0);
     } catch (err) {
-      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
-      toast.error(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+      const msg = err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tải dữ liệu';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  // Fetch leads with pagination
+  const fetchLeadsPaginated = useCallback(async (page = 1, params = {}) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await leadService.list({ page, page_size: 50, ...params });
+      const result = res.data?.data || {};
+      setLeads(result.items || []);
+      setTotalLeads(result.total || 0);
+      setCurrentPage(page);
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tải dữ liệu';
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchLeads();
+  }, [fetchLeads]);
+
+  // Handle search with debounce
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      fetchLeadsPaginated(1, value ? { keyword: value } : {});
+    }, 300);
+  };
+
+  // Create lead
+  const handleCreateLead = async (data) => {
+    setIsLoadingAction(true);
+    try {
+      await leadService.create(data);
+      toast.success('Tạo lead thành công');
+      fetchLeadsPaginated(1);
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tạo lead';
+      toast.error(msg);
+      throw err;
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
+  // Update lead
+  const handleUpdateLead = async (id, data) => {
+    setIsLoadingAction(true);
+    try {
+      const res = await leadService.update(id, data);
+      toast.success('Cập nhật lead thành công');
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...res.data?.data } : l)));
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi cập nhật lead';
+      toast.error(msg);
+      throw err;
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
+  // Update lead status
+  const handleUpdateStatus = async (id, status_code) => {
+    setIsLoadingAction(true);
+    try {
+      const res = await leadService.updateStatus(id, status_code);
+      toast.success('Cập nhật trạng thái thành công');
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...res.data?.data } : l)));
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi cập nhật trạng thái';
+      toast.error(msg);
+      throw err;
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
+  // Assign user
+  const handleAssignUser = async (id, user_id) => {
+    setIsLoadingAction(true);
+    try {
+      const res = await leadService.assignUser(id, user_id);
+      toast.success('Gán nhân viên thành công');
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...res.data?.data } : l)));
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi gán nhân viên';
+      toast.error(msg);
+      throw err;
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
+  // Route lead
+  const handleRouteLead = async (id) => {
+    setIsLoadingAction(true);
+    try {
+      await leadService.route(id);
+      toast.success('Định tuyến lead thành công');
+      fetchLeadsPaginated(currentPage);
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi định tuyến lead';
+      toast.error(msg);
+      throw err;
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
+  // Pagination handler
+  const handlePageChange = (page) => {
+    fetchLeadsPaginated(page, searchQuery ? { keyword: searchQuery } : {});
+  };
 
   // Tab counts
   const counts = {
@@ -164,7 +275,7 @@ export default function ManagementLeadPage() {
         <div>
           <h1 className="text-lg font-bold text-gray-900">Quản lý Lead</h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            {leads.length} leads · {counts.list} tiếp cận · {counts.followup} hẹn follow-up · {counts.closed} đã chốt
+            {totalLeads} leads · {counts.list} tiếp cận · {counts.followup} hẹn follow-up · {counts.closed} đã chốt
           </p>
         </div>
       </div>
@@ -236,7 +347,7 @@ export default function ManagementLeadPage() {
           <SearchInput
             placeholder="Tìm theo tên, SĐT, ID..."
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={handleSearch}
             debounceMs={0}
             size="sm"
             className="w-56"
@@ -355,7 +466,7 @@ export default function ManagementLeadPage() {
                     <div className="flex flex-col items-center gap-2">
                       <p>{error}</p>
                       <button
-                        onClick={fetchData}
+                        onClick={() => fetchLeadsPaginated(currentPage, searchQuery ? { keyword: searchQuery } : {})}
                         className="text-xs text-blue-500 hover:underline"
                       >
                         Thử lại
@@ -510,15 +621,36 @@ export default function ManagementLeadPage() {
         {/* Pagination */}
         <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
           <p className="text-xs text-gray-400">
-            Hiển thị {filteredLeads.length} / {leads.length} leads
+            Hiển thị {filteredLeads.length} / {totalLeads} leads
           </p>
           <div className="flex items-center gap-1">
-            <button className="px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-100 rounded-lg transition-colors cursor-not-allowed" disabled>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                currentPage <= 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
               ‹
             </button>
-            <button className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded-lg">1</button>
-            <button className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">2</button>
-            <button className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+            {Array.from({ length: Math.ceil(totalLeads / pageSize) }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => handlePageChange(i + 1)}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                  currentPage === i + 1 ? 'bg-blue-500 text-white' : 'text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= Math.ceil(totalLeads / pageSize)}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                currentPage >= Math.ceil(totalLeads / pageSize) ? 'text-gray-400 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
               ›
             </button>
           </div>

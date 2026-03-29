@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Check, X } from 'lucide-react';
+import { apiPost } from '../../services/api';
 
 // ===== ILLUSTRATION =====
 
@@ -214,9 +215,19 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    navigate('/login');
+    try {
+      await apiPost('/auth/register', {
+        full_name: fullName,
+        email,
+        password,
+      });
+      navigate('/login');
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Đăng ký thất bại';
+      setErrors((prev) => ({ ...prev, form: msg }));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const inputClass = (field) => {

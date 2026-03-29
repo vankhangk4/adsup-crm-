@@ -1,40 +1,57 @@
-/**
- * AuthContext.jsx - Quản lý trạng thái đăng nhập bằng Context API
- * - Đọc user từ localStorage khi khởi tạo
- * - Hàm login / logout với hardcode credentials
- * - Lưu user vào localStorage khi đăng nhập thành công
- */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
-const STORAGE_KEY = 'fptcrm_user';
-const HARDCODED_USER = { name: 'Admin', email: 'admin@fpt.vn', role: 'Super Admin' };
-
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
+  const [user, setUser] = useState(null);
+
+  // Initialize user from localStorage on mount
+  useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
+      const stored = localStorage.getItem('crm_user');
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
     } catch {
-      return null;
+      setUser(null);
     }
-  });
+  }, []);
 
-  const login = (email, password) => {
-    if (email === HARDCODED_USER.email && password === '123456') {
-      const userData = { ...HARDCODED_USER };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-      setUser(userData);
-      return userData;
+  const login = useCallback(async (email, password) => {
+    const response = await api.post('/auth/login', { email, password });
+    const data = response.data;
+
+    if (!data.success) {
+      throw new Error(data.message || 'Login failed');
     }
-    throw new Error('Sai tài khoản hoặc mật khẩu');
-  };
 
-  const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    const { access_token, refresh_token, user: userData } = data.data;
+
+    localStorage.setItem('crm_access_token', access_token);
+    localStorage.setItem('crm_refresh_token', refresh_token);
+    localStorage.setItem('crm_user', JSON.stringify(userData));
+    setUser(userData);
+
+    return userData;
+  }, []);
+
+  const logout = useCallback(async () => {
+    const refreshToken = localStorage.getItem('crm_refresh_token');
+
+    if (refreshToken) {
+      try {
+        await api.post('/auth/logout', { refresh_token: refreshToken });
+      } catch {
+        // Ignore logout errors — still clear local state
+      }
+    }
+
+    localStorage.removeItem('crm_access_token');
+    localStorage.removeItem('crm_refresh_token');
+    localStorage.removeItem('crm_user');
     setUser(null);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

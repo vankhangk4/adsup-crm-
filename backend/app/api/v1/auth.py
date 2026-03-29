@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import verify_password
+from app.core.security import verify_password, hash_password
 from app.core.jwt import create_access_token, create_refresh_token, decode_access_token
 from app.core.dependencies import get_current_user
 from app.core.config import settings
@@ -12,7 +12,7 @@ from app.core.response import success_response, error_response
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.models.activity_log import ActivityLog
-from app.schemas.auth import LoginRequest, RefreshRequest, LogoutRequest
+from app.schemas.auth import LoginRequest, RefreshRequest, LogoutRequest, RegisterRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -65,6 +65,35 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             "user": {"id": user.id, "full_name": user.full_name, "email": user.email},
         },
         message="Login successful",
+    )
+
+
+@router.post("/register", status_code=201)
+def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+    # Check email already exists
+    existing = db.query(User).filter(User.email == payload.email).first()
+    if existing:
+        raise HTTPException(status_code=422, detail="Email already registered")
+
+    # Create user
+    user = User(
+        full_name=payload.full_name,
+        email=payload.email,
+        password_hash=hash_password(payload.password),
+        status="active",
+    )
+    db.add(user)
+    db.flush()
+
+    # Activity log
+    log = ActivityLog(actor_user_id=user.id, action="register", target_type="user", target_id=user.id, description=f"User {user.email} registered")
+    db.add(log)
+    db.commit()
+    db.refresh(user)
+
+    return success_response(
+        data={"id": user.id, "full_name": user.full_name, "email": user.email},
+        message="Registration successful",
     )
 
 

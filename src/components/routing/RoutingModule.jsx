@@ -27,6 +27,7 @@ import {
 import PrimaryButton from '../common/PrimaryButton';
 import { CardGridSkeleton } from '../common/SkeletonLoader';
 import { useToast } from '../../contexts/ToastContext';
+import * as routingService from '../../services/routingService';
 
 // ===== CONSTANTS (form options only, no data) =====
 
@@ -781,18 +782,38 @@ export default function RoutingModule() {
       setIsLoading(true);
       setError(null);
 
-      // Example: fetch('/api/routing', { headers: { Authorization: `Bearer ${token}` } })
-      // const res = await fetch('/api/routing');
-      // if (!res.ok) throw new Error('Failed to fetch routing data');
-      // const data = await res.json();
-      // setRules(data.rules || []);
-      // setTeleGroups(data.teleGroups || []);
-      // setQueueData(data.queueData || []);
+      const [rulesRes, queuesRes] = await Promise.all([
+        routingService.listRules(),
+        routingService.listQueues(),
+      ]);
 
-      // Placeholder: initialize empty state for now
-      setRules([]);
-      setTeleGroups([]);
-      setQueueData([]);
+      // Normalize API response (wrapped in data.data due to paginated response)
+      const rulesData = rulesRes?.data || rulesRes || [];
+      const queuesData = queuesRes?.data || queuesRes || [];
+
+      // Convert rules from API shape to UI shape
+      const normalizedRules = (Array.isArray(rulesData.items) ? rulesData.items : rulesData).map((r) => ({
+        id: r.id,
+        name: r.name,
+        status: r.is_active,
+        conditions: [
+          ...(r.match_source_code ? [{ field: 'Nguồn Lead', operator: '=', value: r.match_source_code }] : []),
+          ...(r.match_province ? [{ field: 'Tỉnh/TP', operator: '=', value: r.match_province }] : []),
+          ...(r.match_priority ? [{ field: 'Mức độ ưu tiên', operator: '=', value: r.match_priority }] : []),
+          ...(r.match_time_from ? [{ field: 'Giờ Lead', operator: '=', value: `${r.match_time_from} - ${r.match_time_to || ''}` }] : []),
+        ],
+        actions: r.target_group_id ? [{ type: 'assign_group', value: r.target_group_id }] : [],
+      }));
+
+      // Normalize queue data
+      const normalizedQueues = (Array.isArray(queuesData.items) ? queuesData.items : queuesData).map((q) => ({
+        id: q.id,
+        waitTime: q.created_at ? '00:00' : '00:00',
+      }));
+
+      setRules(normalizedRules);
+      setQueueData(normalizedQueues);
+      setTeleGroups([]); // Tele groups from separate endpoint if available
     } catch (err) {
       setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
       toast.error('Không thể tải dữ liệu routing');
@@ -805,29 +826,70 @@ export default function RoutingModule() {
     fetchRoutingData();
   }, []);
 
-  const handleToggleRule = (ruleId) => {
+  const handleToggleRule = async (ruleId) => {
     const rule = rules.find((r) => r.id === ruleId);
-    setRules((prev) =>
-      prev.map((r) => (r.id === ruleId ? { ...r, status: !r.status } : r))
-    );
-    toast.success(`Đã ${!rule?.status ? 'bật' : 'tắt'} quy tắc`);
-  };
-
-  const handleDeleteRule = (ruleId) => {
-    setRules((prev) => prev.filter((r) => r.id !== ruleId));
-    toast.success('Đã xóa quy tắc thành công');
-  };
-
-  const handleSaveRule = (savedRule) => {
-    if (editingRule && !isCreating) {
-      setRules((prev) => prev.map((r) => (r.id === savedRule.id ? savedRule : r)));
-    } else {
-      const newRule = { ...savedRule, id: Date.now() };
-      setRules((prev) => [...prev, newRule]);
+    try {
+      await routingService.toggleRuleStatus(ruleId);
+      setRules((prev) =>
+        prev.map((r) => (r.id === ruleId ? { ...r, status: !r.status } : r))
+      );
+      toast.success(`Đã ${!rule?.status ? 'bật' : 'tắt'} quy tắc`);
+    } catch (err) {
+      toast.error('Không thể thay đổi trạng thái quy tắc');
     }
-    setEditingRule(null);
-    setIsCreating(false);
-    toast.success('Đã lưu quy tắc thành công');
+  };
+
+  const handleDeleteRule = async (ruleId) => {
+    try {
+      if (routingService.deleteRule) {
+        await routingService.deleteRule(ruleId);
+      }
+      setRules((prev) => prev.filter((r) => r.id !== ruleId));
+      toast.success('Đã xóa quy tắc thành công');
+    } catch (err) {
+      toast.error('Không thể xóa quy tắc');
+    }
+  };
+
+  const handleSaveRule = async (savedRule) => {
+    try {
+      // Convert UI shape back to API shape
+      const apiData = {
+        name: savedRule.name,
+        priority: 0,
+      };
+
+      // Extract conditions
+      savedRule.conditions.forEach((c) => {
+        if (c.field === 'Nguồn Lead') apiData.match_source_code = c.value;
+        if (c.field === 'Tỉnh/TP') apiData.match_province = c.value;
+        if (c.field === 'Mức độ ưu tiên') apiData.match_priority = c.value;
+        if (c.field === 'Giờ Lead') {
+          const parts = c.value.split(' - ');
+          apiData.match_time_from = parts[0];
+          apiData.match_time_to = parts[1] || '';
+        }
+      });
+
+      // Extract actions
+      savedRule.actions.forEach((a) => {
+        if (a.type === 'assign_group') apiData.target_group_id = a.value;
+      });
+
+      if (editingRule && !isCreating) {
+        await routingService.updateRule(savedRule.id, apiData);
+        setRules((prev) => prev.map((r) => (r.id === savedRule.id ? savedRule : r)));
+      } else {
+        const res = await routingService.createRule(apiData);
+        const newRule = { ...savedRule, id: res.data.id };
+        setRules((prev) => [...prev, newRule]);
+      }
+      setEditingRule(null);
+      setIsCreating(false);
+      toast.success('Đã lưu quy tắc thành công');
+    } catch (err) {
+      toast.error('Không thể lưu quy tắc');
+    }
   };
 
   const handleAddNew = () => {

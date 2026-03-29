@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
 import { CardGridSkeleton } from '../common/SkeletonLoader';
+import * as departmentService from '../../services/departmentService';
+import * as userService from '../../services/userService';
 
 // ===== SUB-COMPONENTS =====
 
@@ -181,18 +183,64 @@ export default function DepartmentsPage() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Example: fetch('/api/departments?include=members,stats')
+  // Fetch departments data from API
   const fetchData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      // const response = await fetch('/api/departments?include=members,stats');
-      // if (!response.ok) throw new Error('Failed to fetch departments');
-      // const data = await response.json();
-      // setDepartments(data);
-      setDepartments([]);
+
+      // Try departments endpoint first, then fall back to aggregating users
+      let normalizedDepts = [];
+
+      try {
+        const deptRes = await departmentService.list({ page_size: 100 });
+        const deptData = deptRes?.data?.items || deptRes?.data || deptRes || [];
+        normalizedDepts = deptData.map((d) => ({
+          id: d.id,
+          name: d.name,
+          description: d.description || '',
+          iconBg: d.icon_bg || 'bg-blue-500',
+          memberCount: d.member_count || 0,
+          members: [],
+          leads: d.leads || 0,
+          active: d.is_active !== false,
+        }));
+      } catch {
+        // No departments endpoint - aggregate from users
+        const usersRes = await userService.list({ page_size: 200 });
+        const usersData = usersRes?.data?.items || usersRes?.data || usersRes || [];
+
+        // Group users by department_id
+        const deptMap = {};
+        usersData.forEach((u) => {
+          const deptId = u.department_id || 'unknown';
+          if (!deptMap[deptId]) {
+            deptMap[deptId] = {
+              id: deptId,
+              name: `Phòng ban ${deptId}`,
+              description: '',
+              iconBg: 'bg-blue-500',
+              memberCount: 0,
+              members: [],
+              leads: 0,
+              active: true,
+            };
+          }
+          deptMap[deptId].members.push({
+            id: u.id,
+            name: u.full_name || u.username || u.email,
+            avatar: (u.full_name || u.username || 'U').substring(0, 2).toUpperCase(),
+            status: u.status === 'active' ? 'online' : 'offline',
+          });
+          deptMap[deptId].memberCount++;
+        });
+
+        normalizedDepts = Object.values(deptMap);
+      }
+
+      setDepartments(normalizedDepts);
     } catch (err) {
-      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+      setError(err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
     } finally {
       setIsLoading(false);
     }

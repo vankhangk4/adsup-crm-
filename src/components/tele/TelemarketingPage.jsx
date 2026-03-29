@@ -34,6 +34,8 @@ import {
   Inbox,
 } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import * as teleService from '../../services/teleService';
+import * as scriptService from '../../services/scriptService';
 
 // ===== STATIC CONFIG (no API dependency) =====
 
@@ -569,27 +571,42 @@ export default function TelemarketingPage() {
       setError(null);
 
       try {
-        // TODO: Replace with actual API endpoints
-        // const [leadsRes, scriptsRes] = await Promise.all([
-        //   fetch('/api/tele/leads'),
-        //   fetch('/api/tele/scripts'),
-        // ]);
-        // if (!leadsRes.ok) throw new Error('Failed to fetch leads');
-        // if (!scriptsRes.ok) throw new Error('Failed to fetch scripts');
-        // const leadsData = await leadsRes.json();
-        // const scriptsData = await scriptsRes.json();
+        const [leadsRes, scriptsRes] = await Promise.all([
+          teleService.listLeads({ page_size: 100 }),
+          scriptService.listScripts({ page_size: 100 }),
+        ]);
 
-        // Placeholder: simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        const leadsData = leadsRes?.data?.items || leadsRes?.data || leadsRes || [];
+        const scriptsData = scriptsRes?.data?.items || scriptsRes?.data || scriptsRes || [];
+
+        const normalizedLeads = leadsData.map((l) => ({
+          id: l.id,
+          name: l.customer_name || l.external_customer_id || `Lead #${l.id}`,
+          phone: l.phone || '',
+          service: l.service_name || '',
+          status: l.lead_status_code === 'new' || l.lead_status_code === 'qualified' ? 'Hoạt động' : 'Giờ hẹn gọi',
+          priority: l.interest_level === 'high' ? 'Cao' : l.interest_level === 'medium' ? 'Trung bình' : 'Thấp',
+          followUp: l.next_follow_up || '-',
+          lastCall: l.last_call || '-',
+          callCount: l.call_count || 0,
+          note: l.note_tele || l.note_page || '',
+          avatar: (l.customer_name || 'L').substring(0, 3).toUpperCase(),
+          tags: l.tags || [],
+          history: [],
+        }));
+
+        const normalizedScripts = scriptsData.map((s) => ({
+          id: s.id,
+          name: s.name || s.title || `Script #${s.id}`,
+          content: s.content || s.script_text || '',
+        }));
 
         if (!isMounted) return;
-
-        // Set fetched data (use placeholder empty arrays when API not ready)
-        setLeads([]);
-        setScripts([]);
+        setLeads(normalizedLeads);
+        setScripts(normalizedScripts);
       } catch (err) {
         if (!isMounted) return;
-        setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+        setError(err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
         toast.error('Không thể tải dữ liệu telemarketing');
       } finally {
         if (isMounted) {
@@ -643,30 +660,73 @@ export default function TelemarketingPage() {
   };
 
   // End call
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current);
       callTimerRef.current = null;
     }
+    const prevLead = selectedLead;
     setIsCallActive(false);
-    // TODO: Save call log to API
-    // await fetch('/api/tele/calls', { method: 'POST', body: JSON.stringify({ ... }) });
-    if (selectedLead) {
-      toast.success(`Đã kết thúc cuộc gọi với ${selectedLead.name}`);
+
+    if (prevLead) {
+      try {
+        // Save call log
+        await teleService.addCallLog(prevLead.id, {
+          result: callResult,
+          duration: callDuration,
+          note: callNote,
+        });
+        // Create follow-up if date is set
+        if (followUpDate) {
+          await teleService.createFollowUp(prevLead.id, {
+            follow_up_time: followUpDate,
+            note: callNote,
+          });
+        }
+        // Update status if selected
+        if (leadStatus) {
+          const statusMap = {
+            'Mới': 'new',
+            'Đang xử lý': 'in_progress',
+            'Thành công': 'success',
+            'Từ chối': 'rejected',
+            'Chưa liên hệ': 'not_contacted',
+          };
+          await teleService.updateStatus(prevLead.id, statusMap[leadStatus] || 'new');
+        }
+        toast.success(`Đã kết thúc cuộc gọi với ${prevLead.name}`);
+      } catch (err) {
+        toast.error('Lỗi khi lưu thông tin cuộc gọi');
+      }
     }
   };
 
   // Toggle status
-  const handleToggleStatus = (leadId) => {
-    // TODO: Update lead status via API
-    // await fetch(`/api/tele/leads/${leadId}/status`, { method: 'PATCH', body: JSON.stringify({ status: ... }) });
+  const handleToggleStatus = async (leadId) => {
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead) return;
+    const newStatus = lead.status === 'Hoạt động' ? 'Giờ hẹn gọi' : 'Hoạt động';
+    const statusMap = {
+      'Hoạt động': 'qualified',
+      'Giờ hẹn gọi': 'scheduled',
+    };
+    // Optimistic update
     setLeads((prev) =>
       prev.map((l) =>
-        l.id === leadId
-          ? { ...l, status: l.status === 'Hoạt động' ? 'Giờ hẹn gọi' : 'Hoạt động' }
-          : l
+        l.id === leadId ? { ...l, status: newStatus } : l
       )
     );
+    try {
+      await teleService.updateStatus(leadId, statusMap[newStatus]);
+    } catch (err) {
+      // Revert on failure
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === leadId ? { ...l, status: lead.status } : l
+        )
+      );
+      toast.error('Lỗi khi cập nhật trạng thái');
+    }
   };
 
   useEffect(() => {

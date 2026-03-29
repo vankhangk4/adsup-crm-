@@ -22,6 +22,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
+import * as channelService from '../../services/channelService';
 
 // ===== EMPTY STATE COMPONENT =====
 
@@ -411,34 +412,28 @@ export default function ChannelsModule() {
       setError(null);
 
       try {
-        // Example: fetch('/api/channels')
-        // const channelsRes = await fetch('/api/channels');
-        // if (!channelsRes.ok) throw new Error('Failed to fetch channels');
-        // const channelsData = await channelsRes.json();
+        const channelsRes = await channelService.list({ page_size: 100 });
+        const channelsData = channelsRes?.data?.items || channelsRes?.data || channelsRes || [];
 
-        // Example: fetch('/api/roles')
-        // const rolesRes = await fetch('/api/roles');
-        // if (!rolesRes.ok) throw new Error('Failed to fetch roles');
-        // const rolesData = await rolesRes.json();
+        // Normalize channels from API to UI shape
+        const normalized = channelsData.map((ch) => ({
+          id: ch.id,
+          name: ch.name,
+          code: ch.code,
+          description: ch.description,
+          is_active: ch.is_active,
+          platform: ch.code?.toLowerCase() || 'website',
+          nickCount: 0,
+          status: ch.is_active,
+          pageList: [],
+        }));
 
-        // Example: fetch('/api/staff')
-        // const staffRes = await fetch('/api/staff');
-        // if (!staffRes.ok) throw new Error('Failed to fetch staff');
-        // const staffData = await staffRes.json();
-
-        // Placeholder data - replace with API calls above
-        // setChannels(channelsData);
-        // setRolesList(rolesData);
-        // setAllStaffOptions(staffData);
-        // setActiveChannel(channelsData[0] || null);
-
-        // Temporary: clear placeholder data
-        setChannels([]);
+        setChannels(normalized);
+        setActiveChannel(normalized[0] || null);
         setRolesList([]);
         setAllStaffOptions([]);
-        setActiveChannel(null);
       } catch (err) {
-        setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+        setError(err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
         console.error('ChannelsModule fetch error:', err);
       } finally {
         setIsLoading(false);
@@ -471,24 +466,30 @@ export default function ChannelsModule() {
     setIsModalOpen(true);
   };
 
-  const handleRefresh = () => {
-    // Trigger data refetch by toggling the effect
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Example: fetch('/api/channels')
-        // const channelsRes = await fetch('/api/channels');
-        // const channelsData = await channelsRes.json();
-        // setChannels(channelsData);
-        // setActiveChannel(channelsData[0] || null);
-      } catch (err) {
-        setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const channelsRes = await channelService.list({ page_size: 100 });
+      const channelsData = channelsRes?.data?.items || channelsRes?.data || channelsRes || [];
+      const normalized = channelsData.map((ch) => ({
+        id: ch.id,
+        name: ch.name,
+        code: ch.code,
+        description: ch.description,
+        is_active: ch.is_active,
+        platform: ch.code?.toLowerCase() || 'website',
+        nickCount: 0,
+        status: ch.is_active,
+        pageList: [],
+      }));
+      setChannels(normalized);
+      setActiveChannel(normalized[0] || null);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

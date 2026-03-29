@@ -19,6 +19,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
+import * as userService from '../../services/userService';
 
 // ===== SUB-COMPONENTS =====
 
@@ -421,34 +422,58 @@ export default function UsersModule() {
   const filterRoles = rolesInit.map((r) => r.name);
   const filterDepts = [...new Set(users.map((u) => u.department).filter(Boolean))];
 
-  // Fetch data placeholder
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Example: fetch('/api/users')
-        // const usersRes = await fetch('/api/users');
-        // const usersData = await usersRes.json();
-        // setUsers(usersData);
+        const [usersRes, rolesRes, permsRes] = await Promise.all([
+          userService.list({ page_size: 100 }),
+          userService.listRoles({ page_size: 100 }),
+          userService.listPermissions({ page_size: 100 }),
+        ]);
 
-        // Example: fetch('/api/roles')
-        // const rolesRes = await fetch('/api/roles');
-        // const rolesData = await rolesRes.json();
-        // setRolesInit(rolesData);
+        const usersData = usersRes?.data?.items || usersRes?.data || usersRes || [];
+        const rolesData = rolesRes?.data?.items || rolesRes?.data || rolesRes || [];
+        const permsData = permsRes?.data?.items || permsRes?.data || permsRes || [];
 
-        // Example: fetch('/api/permissions')
-        // const permsRes = await fetch('/api/permissions');
-        // const permsData = await permsRes.json();
-        // setAllPermissions(permsData);
+        // Normalize users from API to UI shape
+        const normalizedUsers = usersData.map((u) => ({
+          id: u.id,
+          name: u.full_name || u.username || u.email,
+          email: u.email,
+          phone: u.phone || '',
+          role: u.role?.name || 'Nhân viên',
+          department: u.department_id || '',
+          status: u.status === 'active' || u.is_active,
+          avatar: (u.full_name || u.username || u.email || 'U').substring(0, 2).toUpperCase(),
+          avatarColor: 'from-blue-400 to-blue-600',
+        }));
 
-        // Placeholder: simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setUsers([]);
-        setRolesInit([]);
-        setAllPermissions([]);
+        // Normalize roles
+        const normalizedRoles = rolesData.map((r) => ({
+          id: r.id,
+          name: r.name,
+          code: r.code,
+          description: r.description || '',
+          color: 'bg-green-100 text-green-700',
+          count: 0,
+        }));
+
+        // Normalize permissions
+        const normalizedPerms = permsData.map((p) => ({
+          id: p.id,
+          code: p.code,
+          label: p.name,
+          group: p.module || 'Chung',
+        }));
+
+        setUsers(normalizedUsers);
+        setRolesInit(normalizedRoles);
+        setAllPermissions(normalizedPerms);
       } catch (err) {
-        setError(err.message || 'Failed to load data');
+        setError(err.response?.data?.detail || err.message || 'Failed to load data');
       } finally {
         setIsLoading(false);
       }
@@ -467,10 +492,17 @@ export default function UsersModule() {
     return matchSearch && matchRole && matchDept;
   });
 
-  const toggleStatus = (userId) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, status: !u.status } : u))
-    );
+  const toggleStatus = async (userId) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+    try {
+      await userService.toggleStatus(userId, !user.status);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, status: !u.status } : u))
+      );
+    } catch (err) {
+      console.error('Failed to toggle user status:', err);
+    }
   };
 
   const handleEditUser = (user) => {

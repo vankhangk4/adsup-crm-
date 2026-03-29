@@ -31,170 +31,10 @@ import {
   X,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
+import * as conversationService from '../../services/conversationService';
+import * as scriptService from '../../services/scriptService';
+import { useToast } from '../../contexts/ToastContext';
 
-// ===== MOCK DATA =====
-
-const conversationsInit = [
-  {
-    id: 1,
-    name: 'Nguyễn Văn An',
-    avatar: 'NVA',
-    source: 'facebook',
-    sourceIcon: 'FB',
-    snippet: 'Em muốn hỏi về gói dịch vụ FPT Internet cho gia đình ạ',
-    time: '10:45',
-    unread: 2,
-    badges: ['HOT'],
-    assigned: true,
-    phone: '0912 345 678',
-  },
-  {
-    id: 2,
-    name: 'Trần Thị Bình',
-    avatar: 'TTB',
-    source: 'zalo',
-    sourceIcon: 'ZALO',
-    snippet: 'Dạ em cảm ơn, để em xem thông tin rồi phản hồi lại ạ',
-    time: '10:32',
-    unread: 0,
-    badges: [],
-    assigned: true,
-    phone: '0934 567 890',
-  },
-  {
-    id: 3,
-    name: 'Phạm Đức Cường',
-    avatar: 'PDC',
-    source: 'facebook',
-    sourceIcon: 'FB',
-    snippet: 'Chưa có SĐT - Khách hàng chưa cung cấp số điện thoại',
-    time: '10:20',
-    unread: 1,
-    badges: ['no-phone'],
-    assigned: false,
-    phone: null,
-  },
-  {
-    id: 4,
-    name: 'Hoàng Thị Dung',
-    avatar: 'HTD',
-    source: 'zalo',
-    sourceIcon: 'ZALO',
-    snippet: 'Gói Premium có khuyến mãi gì không ạ?',
-    time: '09:58',
-    unread: 0,
-    badges: ['WAIT'],
-    assigned: true,
-    phone: '0987 654 321',
-  },
-  {
-    id: 5,
-    name: 'Lê Minh Tuấn',
-    avatar: 'LMT',
-    source: 'hotline',
-    sourceIcon: 'HL',
-    snippet: 'Em đã nhận được tư vấn, cho em thời gian suy nghĩ',
-    time: '09:30',
-    unread: 3,
-    badges: [],
-    assigned: true,
-    phone: '0901 234 567',
-  },
-  {
-    id: 6,
-    name: 'Vũ Thu Hà',
-    avatar: 'VTH',
-    source: 'website',
-    sourceIcon: 'WEB',
-    snippet: 'Báo giá Internet cho công ty 5 nhân viên',
-    time: '09:15',
-    unread: 0,
-    badges: [],
-    assigned: false,
-    phone: '0945 123 456',
-  },
-];
-
-const messagesInit = [
-  {
-    id: 1,
-    sender: 'user',
-    text: 'Em muốn hỏi về gói dịch vụ FPT Internet cho gia đình ạ',
-    time: '10:40',
-  },
-  {
-    id: 2,
-    sender: 'page',
-    text: 'Dạ chào anh/chị! Em là tư vấn viên FPT. Anh/chị muốn hỏi về gói Internet gia đình ạ?',
-    time: '10:41',
-  },
-  {
-    id: 3,
-    sender: 'user',
-    text: 'Đúng rồi, nhà em có 4 người lớn, hay xem phim và chơi game online',
-    time: '10:42',
-  },
-  {
-    id: 4,
-    sender: 'page',
-    text: 'Dạ vậy em tư vấn gói Super100 (100Mbps) phù hợp với gia đình anh/chị ạ. Giá chỉ 299.000đ/tháng, miễn phí lắp đặt. Anh/chị có muốn em gửi báo giá chi tiết không?',
-    time: '10:43',
-  },
-  {
-    id: 5,
-    sender: 'user',
-    text: 'OK, gửi em đi',
-    time: '10:45',
-  },
-];
-
-const scripts = [
-  {
-    id: 1,
-    title: 'Kịch bản chào hàng - Internet',
-    content: `1. CHÀO HỎI:
-"Xin chào anh/chị! Em là tư vấn viên FPT Telecom. Rất vui được hỗ trợ anh/chị hôm nay ạ."
-
-2. TÌM HIỂU NHU CẦU:
-"Anh/chị đang quan tâm đến dịch vụ nào ạ?"
-- Internet gia đình → Chuyển gói Super100/Gigabit
-- Internet kinh doanh → Chuyển gói doanh nghiệp
-
-3. TƯ VẤN SẢN PHẨM:
-Giới thiệu ưu điểm: Tốc độ cao, băng thông rộng, lắp đặt nhanh, hỗ trợ 24/7
-
-4. XỬ LÝ PHẢN ĐỐI:
-"Khách hàng so sánh với nhà mạng khác"
-→ Em hiểu ý anh/chị ạ. FPT có ưu điểm riêng về... (tùy tình huống)
-
-5. KẾT THÚC:
-"Cảm ơn anh/chị đã quan tâm đến FPT. Nếu cần hỗ trợ thêm, anh/chị liên hệ..."`,
-  },
-  {
-    id: 2,
-    title: 'Kịch bản chăm sóc khách hàng',
-    content: `1. CHÀO HỎI:
-"Xin chào anh/chị! Em gọi từ FPT Telecom, đang gọi kiểm tra chất lượng dịch vụ ạ."
-
-2. KIỂM TRA:
-- "Dịch vụ Internet nhà anh/chị sử dụng ổn định không ạ?"
-- "Có sự cố nào cần báo cáo không?"
-
-3. CẢM ƠN & KẾT THÚC:
-"Cảm ơn anh/chị đã sử dụng dịch vụ FPT. Chúc anh/chị một ngày tốt lành!"`,
-  },
-  {
-    id: 3,
-    title: 'Kịch bản thu thập SĐT',
-    content: `"Dạ để em tư vấn chi tiết và hỗ trợ anh/chị tốt nhất, anh/chị cho em xin số điện thoại liên hệ được không ạ?"
-
-Nếu khách đồng ý:
-"Tuyệt vời ạ! Em sẽ lưu lại thông tin và sẽ liên hệ lại ngay ạ."
-
-Nếu khách từ chối:
-"Không sao ạ, nếu anh/chị cần hỗ trợ thêm có thể nhắn tin lại cho FPT bất cứ lúc nào ạ!"`,
-  },
-];
 
 // ===== SUB-COMPONENTS =====
 
@@ -520,25 +360,104 @@ function ActionButton({ icon: Icon, label, color, onClick, variant = 'default' }
 // ===== MAIN COMPONENT =====
 
 export default function ChatModule() {
-  const [activeConvId, setActiveConvId] = useState(conversationsInit[0].id);
+  const toast = useToast();
+  const [conversations, setConversations] = useState([]);
+  const [activeConvId, setActiveConvId] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [messages, setMessages] = useState(messagesInit);
-  const [activeScriptId, setActiveScriptId] = useState(1);
+  const [messages, setMessages] = useState([]);
+  const [scripts, setScripts] = useState([]);
+  const [activeScriptId, setActiveScriptId] = useState(null);
   const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Lead form
   const [leadForm, setLeadForm] = useState({
-    name: conversationsInit[0].name,
-    phone: conversationsInit[0].phone || '',
+    name: '',
+    phone: '',
     service: '',
     note: '',
   });
 
-  const activeConv = conversationsInit.find((c) => c.id === activeConvId) || conversationsInit[0];
+  // Fetch conversations and scripts
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchData() {
+      try {
+        const [convRes, scriptRes] = await Promise.all([
+          conversationService.listConversations({ page_size: 100 }),
+          scriptService.listScripts({ page_size: 50 }),
+        ]);
+        const convData = convRes?.data?.items || convRes?.data || convRes || [];
+        const scriptData = scriptRes?.data?.items || scriptRes?.data || scriptRes || [];
+
+        const normalizedConvs = convData.map((c) => ({
+          id: c.id,
+          name: c.customer_name || c.external_id || `Conv #${c.id}`,
+          avatar: (c.customer_name || 'C').substring(0, 3).toUpperCase(),
+          source: c.channel || 'website',
+          sourceIcon: (c.channel || 'WEB').toUpperCase().substring(0, 4),
+          snippet: c.last_message || c.note || '',
+          time: c.updated_at ? new Date(c.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+          unread: c.unread_count || 0,
+          badges: (c.is_hot ? ['HOT'] : []).concat(c.is_waiting_tele ? ['WAIT'] : []).concat(!c.phone ? ['no-phone'] : []),
+          assigned: !!c.assigned_user_id,
+          phone: c.phone || null,
+        }));
+
+        const normalizedScripts = scriptData.map((s) => ({
+          id: s.id,
+          title: s.name || s.title || `Script #${s.id}`,
+          content: s.content || s.script_text || '',
+        }));
+
+        if (!isMounted) return;
+        setConversations(normalizedConvs);
+        setScripts(normalizedScripts);
+        if (normalizedConvs.length > 0) {
+          setActiveConvId(normalizedConvs[0].id);
+          setActiveScriptId(normalizedScripts[0]?.id || null);
+        }
+        setIsLoading(false);
+      } catch (err) {
+        if (!isMounted) return;
+        setIsLoading(false);
+        console.error('Failed to fetch chat data:', err);
+      }
+    }
+    fetchData();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Fetch messages when conversation changes
+  useEffect(() => {
+    if (!activeConvId) return;
+    let isMounted = true;
+    async function fetchMessages() {
+      try {
+        const res = await conversationService.listMessages(activeConvId);
+        const msgsData = res?.data?.items || res?.data || res || [];
+        const normalized = msgsData.map((m) => ({
+          id: m.id,
+          sender: m.sender_type === 'customer' ? 'user' : 'page',
+          text: m.message_text || m.content || '',
+          time: m.created_at ? new Date(m.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+        }));
+        if (!isMounted) return;
+        setMessages(normalized.length > 0 ? normalized : []);
+      } catch (err) {
+        if (!isMounted) return;
+        setMessages([]);
+      }
+    }
+    fetchMessages();
+    return () => { isMounted = false; };
+  }, [activeConvId]);
+
+  const activeConv = conversations.find((c) => c.id === activeConvId) || null;
 
   const handleSelectConv = (id) => {
     setActiveConvId(id);
-    const conv = conversationsInit.find((c) => c.id === id);
+    const conv = conversations.find((c) => c.id === id);
     if (conv) {
       setLeadForm((prev) => ({
         ...prev,
@@ -546,19 +465,24 @@ export default function ChatModule() {
         phone: conv.phone || '',
       }));
     }
-    // Reset messages to demo
-    setMessages(messagesInit);
+    setMessages([]);
   };
 
-  const handleSend = (text) => {
-    const newMsg = {
+  const handleSend = async (text) => {
+    if (!activeConvId || !text.trim()) return;
+    const tempMsg = {
       id: Date.now(),
       sender: 'page',
-      text,
+      text: text.trim(),
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     };
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages((prev) => [...prev, tempMsg]);
     setInputValue('');
+    try {
+      await conversationService.sendMessage(activeConvId, text.trim());
+    } catch (err) {
+      toast.error('Không thể gửi tin nhắn');
+    }
   };
 
   const services = ['Internet FPT', 'Truyền hình FPT', 'Camera AI', 'FPT Play Box', 'Gói Combo'];
@@ -574,7 +498,7 @@ export default function ChatModule() {
               <MessageSquare size={14} className="text-blue-500" />
               <h3 className="text-sm font-semibold text-gray-800">Hội thoại</h3>
               <span className="text-[10px] text-red-500 font-semibold bg-red-50 px-1.5 py-0.5 rounded-full">
-                {conversationsInit.filter((c) => c.unread > 0).length} mới
+                {conversations.filter((c) => c.unread > 0).length} mới
               </span>
             </div>
             <button className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
@@ -593,7 +517,7 @@ export default function ChatModule() {
         </div>
 
         <ConversationList
-          conversations={conversationsInit}
+          conversations={conversations}
           activeId={activeConvId}
           onSelect={handleSelectConv}
           activeTab={activeTab}

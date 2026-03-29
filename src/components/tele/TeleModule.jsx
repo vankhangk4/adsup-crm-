@@ -10,106 +10,56 @@ import PrimaryButton from '../common/PrimaryButton';
 import TeleCallPanel from './TeleCallPanel';
 import { TableSkeleton } from '../common/SkeletonLoader';
 import { useToast } from '../../contexts/ToastContext';
+import * as teleService from '../../services/teleService';
 
-// ===== MOCK DATA =====
-const teleLeadsData = [
-  {
-    id: 1,
-    name: 'Trần Bình Minh',
-    phone: '0903 456 789',
-    service: 'Internet FPT',
-    status: 'Hoạt động',
-    priority: 'Cao',
-    followUp: '2026-03-29 14:00',
-    lastCall: '2026-03-28 10:30',
-    callCount: 3,
-    note: 'Khách hàng tiềm năng cao, quan tâm gói Enterprise',
-    avatar: 'TBM',
-  },
-  {
-    id: 2,
-    name: 'Nguyễn Hoàng Nam',
-    phone: '0912 334 455',
-    service: 'Truyền hình FPT',
-    status: 'Hoạt động',
-    priority: 'Trung bình',
-    followUp: '2026-03-29 16:30',
-    lastCall: '2026-03-27 15:00',
-    callCount: 2,
-    note: 'Đang xem xét báo giá',
-    avatar: 'NHN',
-  },
-  {
-    id: 3,
-    name: 'Lê Thị Oanh',
-    phone: '0934 556 677',
-    service: 'Camera AI',
-    status: 'Giờ hẹn gọi',
-    priority: 'Cao',
-    followUp: '2026-03-29 11:00',
-    lastCall: '2026-03-26 09:15',
-    callCount: 1,
-    note: 'Hẹn gọi lại để tư vấn chi tiết',
-    avatar: 'LTO',
-  },
-  {
-    id: 4,
-    name: 'Phạm Văn Phong',
-    phone: '0945 667 788',
-    service: 'Internet FPT',
-    status: 'Hoạt động',
-    priority: 'Thấp',
-    followUp: '-',
-    lastCall: '2026-03-25 14:00',
-    callCount: 1,
-    note: 'Không quan tâm dịch vụ hiện tại',
-    avatar: 'PVP',
-  },
-  {
-    id: 5,
-    name: 'Hoàng Thu Trang',
-    phone: '0967 788 899',
-    service: 'FPT Play Box',
-    status: 'Giờ hẹn gọi',
-    priority: 'Trung bình',
-    followUp: '2026-03-30 09:00',
-    lastCall: '2026-03-28 11:45',
-    callCount: 4,
-    note: 'Cần follow-up sau khi test dịch vụ',
-    avatar: 'HTT',
-  },
-];
-
-// Kịch bản gọi
-const callScripts = [
-  'Kịch bản chào hàng - Internet',
-  'Kịch bản chào hàng - Truyền hình',
-  'Kịch bản chào hàng - Camera',
-  'Kịch bản chăm sóc khách hàng',
-  'Kịch bản upsell dịch vụ',
-];
-
-// Lịch sử cuộc gọi mẫu
-const callHistory = [
-  { id: 1, date: '2026-03-28 10:30', duration: '5m 23s', result: 'Answer', agent: 'Nguyễn Thu Hà', note: 'Khách hàng hẹn gọi lại vào 14h' },
-  { id: 2, date: '2026-03-27 09:00', duration: '2m 10s', result: 'Busy', agent: 'Nguyễn Thu Hà', note: 'Máy bận, gọi lại sau' },
-  { id: 3, date: '2026-03-26 14:30', duration: '8m 45s', result: 'Answer', agent: 'Lê Minh Tuấn', note: 'Tư vấn về gói Premium, cần báo giá' },
-];
 
 export default function TeleModule() {
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'scheduled'
-  const [selectedLead, setSelectedLead] = useState(teleLeadsData[0]);
+  const [selectedLead, setSelectedLead] = useState(null);
   const [isCallActive, setIsCallActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [leads, setLeads] = useState(teleLeadsData);
+  const [leads, setLeads] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const toast = useToast();
 
-  // Simulate API fetch
+  // Fetch tele leads from API
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    let isMounted = true;
+
+    async function fetchData() {
+      try {
+        const res = await teleService.listLeads({ page_size: 100 });
+        const leadsData = res?.data?.items || res?.data || res || [];
+
+        const normalized = leadsData.map((l) => ({
+          id: l.id,
+          name: l.customer_name || l.external_customer_id || `Lead #${l.id}`,
+          phone: l.phone || '',
+          service: l.service_name || '',
+          status: l.lead_status_code === 'new' || l.lead_status_code === 'qualified' ? 'Hoạt động' : 'Giờ hẹn gọi',
+          priority: l.interest_level === 'high' ? 'Cao' : l.interest_level === 'medium' ? 'Trung bình' : 'Thấp',
+          followUp: l.next_follow_up || '-',
+          lastCall: l.last_call || '-',
+          callCount: l.call_count || 0,
+          note: l.note_tele || l.note_page || '',
+          avatar: (l.customer_name || 'L').substring(0, 3).toUpperCase(),
+        }));
+
+        if (isMounted) {
+          setLeads(normalized);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        console.error('Failed to fetch tele leads:', err);
+      }
+    }
+
+    fetchData();
+    return () => { isMounted = false; };
   }, []);
   const [callResult, setCallResult] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
@@ -147,47 +97,84 @@ export default function TeleModule() {
     toast.success(`Đang gọi cho ${lead.name}...`);
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current);
       callTimerRef.current = null;
     }
+    const prevLead = selectedLead;
+    const prevDuration = callDuration;
+    const prevResult = callResult;
+    const prevNote = callNote;
     setIsCallActive(false);
 
-    // Update lead in list
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === selectedLead.id
-          ? {
-              ...l,
-              lastCall: new Date().toLocaleString('vi-VN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
-              callCount: l.callCount + 1,
-              status: leadStatus || l.status,
-              note: callNote || l.note,
-            }
-          : l
-      )
-    );
-    toast.success(`Đã kết thúc cuộc gọi với ${selectedLead.name}`);
+    if (prevLead) {
+      // Optimistic update
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === prevLead.id
+            ? {
+                ...l,
+                lastCall: new Date().toLocaleString('vi-VN', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+                callCount: l.callCount + 1,
+                status: leadStatus || l.status,
+                note: callNote || l.note,
+              }
+            : l
+        )
+      );
+      toast.success(`Đã kết thúc cuộc gọi với ${prevLead.name}`);
+
+      try {
+        await teleService.addCallLog(prevLead.id, {
+          result: prevResult,
+          duration: prevDuration,
+          note: prevNote,
+        });
+        if (leadStatus) {
+          const statusMap = {
+            'Hoạt động': 'qualified',
+            'Giờ hẹn gọi': 'scheduled',
+          };
+          await teleService.updateStatus(prevLead.id, statusMap[leadStatus] || 'new');
+        }
+      } catch (err) {
+        console.error('Failed to save call log:', err);
+      }
+    }
   };
 
-  const handleToggleStatus = (leadId) => {
+  const handleToggleStatus = async (leadId) => {
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead) return;
+    const newStatus = lead.status === 'Hoạt động' ? 'Giờ hẹn gọi' : 'Hoạt động';
+    const statusMap = {
+      'Hoạt động': 'qualified',
+      'Giờ hẹn gọi': 'scheduled',
+    };
+    // Optimistic update
     setLeads((prev) =>
       prev.map((l) =>
-        l.id === leadId
-          ? {
-              ...l,
-              status: l.status === 'Hoạt động' ? 'Giờ hẹn gọi' : 'Hoạt động',
-            }
-          : l
+        l.id === leadId ? { ...l, status: newStatus } : l
       )
     );
+    try {
+      await teleService.updateStatus(leadId, statusMap[newStatus]);
+    } catch (err) {
+      // Revert on failure
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === leadId ? { ...l, status: lead.status } : l
+        )
+      );
+      toast.error('Lỗi khi cập nhật trạng thái');
+    }
   };
 
   useEffect(() => {
@@ -414,8 +401,6 @@ export default function TeleModule() {
         setScript={setScript}
         callNote={callNote}
         setCallNote={setCallNote}
-        callHistory={callHistory}
-        callScripts={callScripts}
         onStartCall={() => handleStartCall(selectedLead)}
         onEndCall={handleEndCall}
         formatDuration={formatDuration}

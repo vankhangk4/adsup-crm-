@@ -7,6 +7,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Send, Image, Phone, BookOpen, Paperclip, Trash2, Bold, Italic, Underline, List, Link, Copy, Inbox } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import * as conversationService from '../../services/conversationService';
+import * as scriptService from '../../services/scriptService';
 
 // ============================================================
 // STATE - Tất cả khởi tạo rỗng
@@ -31,44 +33,83 @@ export default function MultiChannelChatPage() {
   // ============================================================
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchChats() {
       try {
-        // const res = await fetch('/api/chats');
-        // const data = await res.json();
-        // setChatList(data);
-        // setActiveChatId(data[0]?.id || null);
+        const res = await conversationService.listConversations({ page_size: 100 });
+        const data = res?.data?.items || res?.data || res || [];
+        const normalized = data.map((c) => ({
+          id: c.id,
+          name: c.customer_name || c.external_id || `Conv #${c.id}`,
+          avatar: (c.customer_name || 'C').substring(0, 3).toUpperCase(),
+          channel: c.channel || 'website',
+          pageName: c.page_name || c.source_page || '',
+          snippet: c.last_message || c.note || '',
+          lastTime: c.updated_at ? new Date(c.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+          unread: c.unread_count || 0,
+          hasPhone: !!c.phone,
+          isHot: !!c.is_hot,
+          isWait: !!c.is_waiting_tele,
+          phone: c.phone || null,
+          service: c.service_name || '',
+          note: c.internal_note || '',
+        }));
+        if (!isMounted) return;
+        setChatList(normalized);
+        setActiveChatId(normalized[0]?.id || null);
       } catch (err) {
+        if (!isMounted) return;
         toast.error('Không thể tải danh sách hội thoại');
       }
     }
     fetchChats();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchScripts() {
       try {
-        // const res = await fetch('/api/scripts');
-        // const data = await res.json();
-        // setScripts(data);
+        const res = await scriptService.listScripts({ page_size: 100 });
+        const data = res?.data?.items || res?.data || res || [];
+        const normalized = data.map((s) => ({
+          id: s.id,
+          label: s.name || s.category || 'Kịch bản',
+          items: (s.content || s.script_text || '').split('\n').filter(Boolean),
+        }));
+        if (!isMounted) return;
+        setScripts(normalized);
       } catch (err) {
+        if (!isMounted) return;
         toast.error('Không thể tải kịch bản');
       }
     }
     fetchScripts();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
     if (!activeChatId) return;
+    let isMounted = true;
     async function fetchMessages() {
       try {
-        // const res = await fetch(`/api/chats/${activeChatId}/messages`);
-        // const data = await res.json();
-        // setMessages(data);
+        const res = await conversationService.listMessages(activeChatId);
+        const data = res?.data?.items || res?.data || res || [];
+        const normalized = data.map((m) => ({
+          id: m.id,
+          sender: m.sender_type === 'customer' ? 'user' : 'page',
+          text: m.message_text || m.content || '',
+          time: m.created_at ? new Date(m.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+        }));
+        if (!isMounted) return;
+        setMessages(normalized);
       } catch (err) {
+        if (!isMounted) return;
         toast.error('Không thể tải tin nhắn');
       }
     }
     fetchMessages();
+    return () => { isMounted = false; };
   }, [activeChatId]);
 
   useEffect(() => {
@@ -94,8 +135,8 @@ export default function MultiChannelChatPage() {
   // HANDLERS
   // ============================================================
 
-  const handleSend = () => {
-    if (!messageInput.trim()) return;
+  const handleSend = async () => {
+    if (!messageInput.trim() || !activeChatId) return;
     const newMsg = {
       id: Date.now(),
       sender: 'page',
@@ -103,8 +144,13 @@ export default function MultiChannelChatPage() {
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages((prev) => [...prev, newMsg]);
+    const text = messageInput.trim();
     setMessageInput('');
-    // TODO: fetch('/api/chats/${activeChatId}/messages', { method: 'POST', body: JSON.stringify({ text: messageInput }) })
+    try {
+      await conversationService.sendMessage(activeChatId, text);
+    } catch (err) {
+      toast.error('Không thể gửi tin nhắn');
+    }
   };
 
   const handleCopyScript = () => {

@@ -28,6 +28,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import PrimaryButton from '../common/PrimaryButton';
+import * as serviceService from '../../services/serviceService';
 
 // ===== SERVICE ICON MAPPING =====
 
@@ -339,35 +340,41 @@ export default function ServicesModule() {
       setIsLoading(true);
       setError(null);
       try {
-        // TODO: Replace with actual API endpoints
-        // Example: const [catsRes, servRes, teleRes, pagesRes] = await Promise.all([
-        //   fetch('/api/service-categories'),
-        //   fetch('/api/services'),
-        //   fetch('/api/tele-groups'),
-        //   fetch('/api/pages'),
-        // ]);
-        // const [cats, serv, tele, pages] = await Promise.all([
-        //   catsRes.json(),
-        //   servRes.json(),
-        //   teleRes.json(),
-        //   pagesRes.json(),
-        // ]);
-        // setServiceCategories(cats);
-        // setServices(serv);
-        // setTeleGroups(tele);
-        // setPageList(pages);
+        const [servicesRes] = await Promise.all([
+          serviceService.list({ page_size: 100 }),
+        ]);
 
-        // Simulate loading delay (remove when real API is connected)
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const servicesData = servicesRes?.data?.items || servicesRes?.data || servicesRes || [];
 
-        // Placeholder empty data - remove when API is connected
-        setServiceCategories([]);
-        setServices([]);
+        // Normalize API services to UI shape
+        const normalized = servicesData.map((s) => ({
+          id: s.id,
+          name: s.name,
+          code: s.code,
+          price: s.description || '',
+          status: s.is_active,
+          category: s.category || 'Chung',
+          image: s.code?.toLowerCase().substring(0, 6) || 'filler',
+          iconBg: 'bg-blue-500',
+          color: 'from-blue-50 to-blue-100',
+          teleGroup: s.tele_group || '',
+        }));
+
+        setServices(normalized);
+        // Group services by category
+        const categories = [...new Set(normalized.map((s) => s.category))].map((name) => ({
+          id: name,
+          name,
+          color: 'bg-blue-500',
+        }));
+        setServiceCategories(categories);
+        setSelectedCategory(categories[0] || null);
+
+        // Tele groups and pages would come from separate endpoints
         setTeleGroups([]);
         setPageList([]);
-        setSelectedCategory(null);
       } catch (err) {
-        setError(err.message || 'Không thể tải dữ liệu dịch vụ');
+        setError(err.response?.data?.detail || err.message || 'Không thể tải dữ liệu dịch vụ');
       } finally {
         setIsLoading(false);
       }
@@ -382,10 +389,17 @@ export default function ServicesModule() {
     return matchCategory && matchSearch;
   });
 
-  const handleToggleService = (serviceId) => {
-    setServices((prev) =>
-      prev.map((s) => (s.id === serviceId ? { ...s, status: !s.status } : s))
-    );
+  const handleToggleService = async (serviceId) => {
+    const service = services.find((s) => s.id === serviceId);
+    if (!service) return;
+    try {
+      await serviceService.toggleStatus(serviceId, !service.status);
+      setServices((prev) =>
+        prev.map((s) => (s.id === serviceId ? { ...s, status: !s.status } : s))
+      );
+    } catch (err) {
+      console.error('Failed to toggle service status:', err);
+    }
   };
 
   // Stats

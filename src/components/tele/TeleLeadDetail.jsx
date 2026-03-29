@@ -205,7 +205,7 @@ export default function TeleLeadDetail({ lead, onClose, onSave }) {
   }
 
   return (
-    <div className="card h-full flex flex-col overflow-hidden">
+    <div className="card h-full flex flex-col overflow-y-auto">
       {/* Lead Header */}
       <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white flex-shrink-0">
         <div className="flex items-start gap-3">

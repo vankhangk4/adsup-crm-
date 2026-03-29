@@ -3,49 +3,41 @@ import clsx from 'clsx'
 import {
   Search,
   Filter,
-  ChevronDown,
-  Flame,
-  Phone,
-  Calendar,
-  Star,
-  ArrowUpDown,
   PhoneCall,
 } from 'lucide-react'
 import { teleLeads, services, leadStatuses } from '../../data/mockData'
 
-// ---- Row highlighting helpers ----
 function getRowHighlight(lead) {
   const now = new Date()
-
   if (lead.appointmentAt && new Date(lead.appointmentAt) < now) return 'overdue'
   if (lead.followUps?.some((f) => f.status === 'pending' && new Date(f.scheduledAt) < now)) return 'overdue'
-
   if (lead.appointmentAt) {
     const appt = new Date(lead.appointmentAt)
     if (appt.toDateString() === now.toDateString()) {
       const diffMs = appt - now
-      if (diffMs <= 60 * 60 * 1000 && diffMs >= -30 * 60 * 1000) return 'due_soon'
+      if (diffMs <= 60 * 60 * 1000 && diffMs >= -30 * 60 * 1000) return 'due-soon'
     }
   }
   if (lead.followUps?.some((f) => {
     if (f.status === 'done') return false
     return new Date(f.scheduledAt).toDateString() === now.toDateString()
-  })) return 'due_soon'
-
+  })) return 'due-soon'
   return null
 }
 
-const rowHighlightConfig = {
-  overdue: { bg: 'bg-red-50', border: 'border-l-2 border-l-red-500', dot: 'bg-red-500' },
-  due_soon: { bg: 'bg-orange-50', border: 'border-l-2 border-l-orange-400', dot: 'bg-orange-400' },
-}
+const QUICK_FILTERS = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'new', label: 'Khách mới' },
+  { id: 'due_today', label: 'Đến hạn' },
+  { id: 'overdue', label: 'Quá hạn' },
+]
 
-const highlightColors = {
-  'Rất cao': { text: 'text-red-600', bg: 'bg-red-50' },
-  'Cao': { text: 'text-orange-600', bg: 'bg-orange-50' },
-  'Trung bình': { text: 'text-amber-600', bg: 'bg-amber-50' },
-  'Thấp': { text: 'text-slate-500', bg: 'bg-slate-100' },
-  'Chưa đánh giá': { text: 'text-slate-400', bg: 'bg-slate-50' },
+const interestColors = {
+  'Rất cao': { text: '#D32F2F', bg: '#FFEBEE' },
+  'Cao': { text: '#F57C00', bg: '#FFF3E0' },
+  'Trung bình': { text: '#F9A825', bg: '#FFFDE7' },
+  'Thấp': { text: '#65676B', bg: '#F0F2F5' },
+  'Chưa đánh giá': { text: '#9CA3AF', bg: '#F9FAFB' },
 }
 
 export default function TeleLeadList({
@@ -59,8 +51,6 @@ export default function TeleLeadList({
   const [search, setSearch] = useState('')
   const [filterService, setFilterService] = useState('all')
   const [filterHot, setFilterHot] = useState('all')
-  const [sortField, setSortField] = useState('updatedAt')
-  const [sortDir, setSortDir] = useState('desc')
   const [showFilters, setShowFilters] = useState(false)
 
   const filtered = useMemo(() => {
@@ -100,227 +90,226 @@ export default function TeleLeadList({
     if (filterHot !== 'all') data = data.filter((l) => (filterHot === 'hot') === l.isHot)
     if (filterStatus !== 'all') data = data.filter((l) => l.leadStatusId === filterStatus)
 
-    data.sort((a, b) => {
-      let va = a[sortField]
-      let vb = b[sortField]
-      if (sortField === 'callCount') { va = Number(va); vb = Number(vb) }
-      if (sortField === 'interestLevel') {
-        const order = { 'Rất cao': 4, 'Cao': 3, 'Trung bình': 2, 'Thấp': 1, 'Chưa đánh giá': 0 }
-        va = order[va] ?? 0; vb = order[vb] ?? 0
-      }
-      if (va < vb) return sortDir === 'asc' ? -1 : 1
-      if (va > vb) return sortDir === 'asc' ? 1 : -1
-      return 0
-    })
-
     return data
-  }, [quickFilter, search, filterService, filterHot, filterStatus, sortField, sortDir])
-
-  const toggleSort = (field) => {
-    if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
-    else { setSortField(field); setSortDir('desc') }
-  }
-
-  const SortIcon = ({ field }) => {
-    if (sortField !== field) return <ArrowUpDown size={12} className="text-slate-300" />
-    return sortDir === 'asc'
-      ? <ChevronDown size={12} className="text-primary-500 rotate-180" />
-      : <ChevronDown size={12} className="text-primary-500" />
-  }
-
-  const getStatusBadge = (status) => (
-    <span className="badge text-[11px] font-medium" style={{ color: status.color, backgroundColor: status.bg }}>
-      {status.label}
-    </span>
-  )
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-  }
+  }, [quickFilter, search, filterService, filterHot, filterStatus])
 
   const formatDateTime = (dateStr) => {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+    if (!dateStr) return null
+    const d = new Date(dateStr)
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return { date: `${day}/${month}`, time: `${hours}:${minutes}` }
+  }
+
+  const isHotTag = (lead) => {
+    if (lead.page?.type === 'zalo') return 'Zalo'
+    if (lead.page?.type === 'facebook') return 'FB'
+    return null
   }
 
   return (
-    <div className="card overflow-hidden">
+    <div className="tele-card flex flex-col h-full">
       {/* Toolbar */}
-      <div className="px-4 py-3 border-b border-slate-200 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input
-            type="text"
-            placeholder="Tìm theo tên, SĐT, mã lead..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-9"
-          />
+      <div className="px-3 pt-3 pb-2">
+        {/* Search Row */}
+        <div className="flex items-center gap-2 mb-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B4B4B4]" size={16} />
+            <input
+              type="text"
+              placeholder="Tìm theo tên, SĐT, mã lead..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="tele-input pl-9 py-1.5 text-[13px]"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={clsx('tele-btn tele-btn-secondary py-1.5 px-3 text-[13px] flex-shrink-0', showFilters && 'ring-2 ring-[#2563EB]')}
+          >
+            <Filter size={14} />
+          </button>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={clsx('btn-secondary text-sm', showFilters && 'ring-2 ring-primary-300')}
-        >
-          <Filter size={15} />
-          Lọc
-          {(filterService !== 'all' || filterHot !== 'all' || filterStatus !== 'all') && (
-            <span className="w-5 h-5 bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-              !
-            </span>
-          )}
-        </button>
-      </div>
 
-      {/* Advanced Filters */}
-      {showFilters && (
-        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Dịch vụ</label>
-            <select value={filterService} onChange={(e) => setFilterService(e.target.value)} className="select-field text-sm">
+        {/* Quick Filter Tabs */}
+        <div className="tele-tab-bar">
+          {QUICK_FILTERS.map((f) => {
+            const isActive = quickFilter === f.id || (f.id === 'all' && !quickFilter)
+            const count = f.id === 'all' ? teleLeads.length : filtered.length
+            return (
+              <button
+                key={f.id}
+                onClick={() => {
+                  if (f.id === 'all') {
+                    // handled via TeleModule
+                  }
+                }}
+                className={clsx('tele-tab flex-1 text-[13px] justify-center', isActive && 'active')}
+              >
+                {f.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Advanced Filters */}
+        {showFilters && (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <select
+              value={filterService}
+              onChange={(e) => setFilterService(e.target.value)}
+              className="tele-select text-[13px] py-1.5"
+            >
               <option value="all">Tất cả dịch vụ</option>
               {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Trạng thái</label>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="select-field text-sm">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="tele-select text-[13px] py-1.5"
+            >
               <option value="all">Tất cả trạng thái</option>
               {leadStatuses.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </div>
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Phân loại</label>
-            <select value={filterHot} onChange={(e) => setFilterHot(e.target.value)} className="select-field text-sm">
-              <option value="all">Tất cả</option>
-              <option value="hot">Lead nóng</option>
-              <option value="cold">Lead lạnh</option>
-            </select>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px]">
+      <div className="flex-1 overflow-y-auto">
+        <table className="w-full">
           <thead>
             <tr>
-              <th className="table-header text-left w-8">
-                <button onClick={() => toggleSort('isHot')} className="flex items-center gap-1">
-                  <Flame size={12} />
-                  <SortIcon field="isHot" />
-                </button>
+              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide" style={{ color: '#65676B', backgroundColor: '#F7F8FA' }}>
+                Khách hàng
               </th>
-              <th className="table-header text-left">Khách hàng</th>
-              <th className="table-header text-left">Dịch vụ</th>
-              <th className="table-header text-left">Trạng thái</th>
-              <th className="table-header text-center w-16">
-                <button onClick={() => toggleSort('callCount')} className="flex items-center gap-1 mx-auto">
-                  <Phone size={12} />
-                  <SortIcon field="callCount" />
-                </button>
+              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide" style={{ color: '#65676B', backgroundColor: '#F7F8FA' }}>
+                Dịch vụ
               </th>
-              <th className="table-header text-left">
-                <button onClick={() => toggleSort('interestLevel')} className="flex items-center gap-1">
-                  <Star size={12} />
-                  <SortIcon field="interestLevel" />
-                </button>
+              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide" style={{ color: '#65676B', backgroundColor: '#F7F8FA' }}>
+                Trạng thái
               </th>
-              <th className="table-header text-left">
-                <button onClick={() => toggleSort('appointmentAt')} className="flex items-center gap-1">
-                  <Calendar size={12} />
-                  <SortIcon field="appointmentAt" />
-                </button>
+              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide" style={{ color: '#65676B', backgroundColor: '#F7F8FA' }}>
+                Đến hạn
               </th>
-              <th className="table-header text-left">Cập nhật</th>
-              <th className="table-header text-center w-14">Gọi</th>
+              <th className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide w-12" style={{ color: '#65676B', backgroundColor: '#F7F8FA' }}>
+                Gọi
+              </th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="table-cell text-center py-12 text-slate-400">
+                <td colSpan={5} className="px-3 py-12 text-center text-sm" style={{ color: '#B4B4B4' }}>
                   Không tìm thấy lead nào
                 </td>
               </tr>
             ) : (
               filtered.map((lead) => {
-                const ic = highlightColors[lead.interestLevel] || highlightColors['Chưa đánh giá']
                 const highlight = getRowHighlight(lead)
-                const hlCfg = highlight ? rowHighlightConfig[highlight] : null
+                const tag = isHotTag(lead)
+                const appt = lead.appointmentAt ? formatDateTime(lead.appointmentAt) : null
+                const ic = interestColors[lead.interestLevel] || interestColors['Chưa đánh giá']
 
                 return (
                   <tr
                     key={lead.leadId}
                     onClick={() => onSelectLead(lead)}
                     className={clsx(
-                      'table-row cursor-pointer transition-colors',
-                      selectedLeadId === lead.leadId && 'bg-primary-50 border-l-2 border-l-primary-500',
-                      hlCfg && !selectedLeadId && `${hlCfg.bg} ${hlCfg.border}`
+                      'tele-lead-row',
+                      selectedLeadId === lead.leadId && 'selected',
+                      highlight === 'overdue' && 'overdue',
+                      highlight === 'due-soon' && 'due-soon'
                     )}
                   >
-                    <td className="table-cell">
-                      <div className="flex items-center gap-1">
-                        {lead.isHot && <Flame size={14} className="text-orange-500" />}
-                        {hlCfg && (
-                          <span title={highlight === 'overdue' ? 'Quá hạn' : 'Đến giờ'} className={clsx('w-1.5 h-1.5 rounded-full', hlCfg.dot)} />
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="table-cell">
-                      <div className="flex items-center gap-3">
-                        <img src={lead.customerAvatar} alt={lead.customerName} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                    {/* Customer */}
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={lead.customerAvatar}
+                          alt={lead.customerName}
+                          className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                        />
                         <div className="min-w-0">
-                          <p className="font-medium text-slate-800 truncate">{lead.customerName}</p>
-                          <p className="text-xs text-slate-500">{lead.customerPhone}</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[13px] font-semibold" style={{ color: '#1C1E21' }}>
+                              {lead.customerName}
+                            </span>
+                            {lead.isHot && (
+                              <span className="tele-badge-red text-[10px] px-1 py-0">Nóng</span>
+                            )}
+                          </div>
+                          <div className="text-[12px] mt-0.5" style={{ color: '#65676B' }}>
+                            {lead.customerPhone}
+                          </div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="table-cell">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: lead.service.color }} />
-                        <span className="text-sm font-medium">{lead.service.name}</span>
+                    {/* Service */}
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: lead.service.color }}
+                        />
+                        <span className="text-[13px] font-medium" style={{ color: '#1C1E21' }}>
+                          {lead.service.name}
+                        </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{lead.page.name}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#F0F2F5', color: '#65676B' }}>
+                          {lead.page.name}
+                        </span>
+                        {tag && (
+                          <span className="tele-badge-blue text-[10px]">{tag}</span>
+                        )}
+                      </div>
                     </td>
 
-                    <td className="table-cell">{getStatusBadge(lead.leadStatus)}</td>
-
-                    <td className="table-cell text-center">
-                      <span className="font-medium">{lead.callCount}</span>
-                      <span className="text-slate-400 text-xs ml-0.5">lần</span>
-                    </td>
-
-                    <td className="table-cell">
-                      <span className={clsx('badge text-[11px] font-medium', ic.bg, ic.text)}>
-                        {lead.interestLevel}
+                    {/* Status */}
+                    <td className="px-3 py-2.5">
+                      <span
+                        className="tele-badge text-[11px]"
+                        style={{ color: lead.leadStatus.color, backgroundColor: lead.leadStatus.bg }}
+                      >
+                        {lead.leadStatus.label}
                       </span>
+                      <div className="mt-1 text-[11px]" style={{ color: '#65676B' }}>
+                        {lead.callCount > 0 ? `${lead.callCount} cuộc gọi` : 'Chưa gọi'}
+                      </div>
                     </td>
 
-                    <td className="table-cell">
-                      {lead.appointmentAt ? (
-                        <span className="text-sm font-medium text-emerald-600">{formatDateTime(lead.appointmentAt)}</span>
+                    {/* Appointment */}
+                    <td className="px-3 py-2.5">
+                      {appt ? (
+                        <div>
+                          <div className="text-[13px] font-semibold" style={{ color: '#00A060' }}>
+                            {appt.date}
+                          </div>
+                          <div className="text-[12px]" style={{ color: '#65676B' }}>
+                            {appt.time}
+                          </div>
+                        </div>
                       ) : (
-                        <span className="text-slate-400 text-sm">—</span>
+                        <span className="text-[12px]" style={{ color: '#B4B4B4' }}>—</span>
                       )}
                     </td>
 
-                    <td className="table-cell">
-                      <span className="text-xs text-slate-400">{formatDate(lead.updatedAt)}</span>
-                    </td>
-
-                    <td className="table-cell text-center">
+                    {/* Call Button */}
+                    <td className="px-3 py-2.5 text-center">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           if (onCall) onCall(lead.leadId, lead.customerPhone)
                         }}
                         title={`Gọi ${lead.customerPhone}`}
-                        className="w-9 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-colors shadow-sm hover:shadow-md active:scale-95 mx-auto"
+                        className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                        style={{ backgroundColor: '#00A060' }}
                       >
-                        <PhoneCall size={16} />
+                        <PhoneCall size={14} color="#fff" />
                       </button>
                     </td>
                   </tr>
@@ -331,16 +320,24 @@ export default function TeleLeadList({
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          Hiển thị <span className="font-medium text-slate-700">{filtered.length}</span> / {teleLeads.length} lead
-        </p>
+      {/* Footer */}
+      <div className="px-3 py-2 flex items-center justify-between" style={{ borderTop: '1px solid #F0F2F5' }}>
+        <span className="text-[12px]" style={{ color: '#65676B' }}>
+          Hiển thị <strong>{filtered.length}</strong> / {teleLeads.length} lead
+        </span>
         <div className="flex items-center gap-1">
-          <button className="btn-secondary px-3 py-1.5 text-xs" disabled>Trước</button>
-          <button className="btn-primary px-3 py-1.5 text-xs">1</button>
-          <button className="btn-secondary px-3 py-1.5 text-xs">2</button>
-          <button className="btn-secondary px-3 py-1.5 text-xs">Sau</button>
+          <button className="tele-btn tele-btn-secondary py-1 px-2 text-[12px]" style={{ minWidth: 'auto' }}>
+            ‹
+          </button>
+          <button className="tele-btn tele-btn-primary py-1 px-2.5 text-[12px]" style={{ minWidth: 'auto' }}>
+            1
+          </button>
+          <button className="tele-btn tele-btn-secondary py-1 px-2.5 text-[12px]" style={{ minWidth: 'auto' }}>
+            2
+          </button>
+          <button className="tele-btn tele-btn-secondary py-1 px-2 text-[12px]" style={{ minWidth: 'auto' }}>
+            ›
+          </button>
         </div>
       </div>
     </div>

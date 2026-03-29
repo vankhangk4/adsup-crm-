@@ -77,9 +77,9 @@ export default function TeleCalendar() {
     day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
       {/* Calendar Grid */}
-      <div className="lg:col-span-2 card p-4">
+      <div className="md:col-span-2 lg:col-span-2 card p-4">
         {/* Month nav */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={prevMonth} className="btn-secondary px-3 py-1.5">
@@ -111,8 +111,8 @@ export default function TeleCalendar() {
                 disabled={!day}
                 onClick={() => day && setSelectedDay(day)}
                 className={`
-                  relative flex flex-col items-center justify-start pt-2 pb-1 px-1 rounded-lg transition-all min-h-[72px]
-                  ${!day ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50'}
+                  relative flex flex-col items-center justify-start pt-1.5 pb-1 px-0.5 rounded-lg transition-all
+                  ${!day ? 'cursor-default min-h-[56px] md:min-h-[72px]' : 'cursor-pointer hover:bg-slate-50 min-h-[56px] md:min-h-[72px]'}
                   ${isSelected ? 'bg-primary-50 ring-2 ring-primary-400' : ''}
                   ${isToday(day) && !isSelected ? 'bg-blue-50' : ''}
                 `}
@@ -172,7 +172,7 @@ export default function TeleCalendar() {
       </div>
 
       {/* Appointments for selected day */}
-      <div className="card p-4">
+      <div className="card p-4 md:sticky md:top-0 md:max-h-[calc(100vh-280px)] md:overflow-y-auto">
         <div className="flex items-center gap-2 mb-4">
           <CalendarIcon size={18} className="text-primary-500" />
           <h3 className="text-sm font-semibold text-slate-800">

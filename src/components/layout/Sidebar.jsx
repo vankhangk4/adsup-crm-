@@ -24,7 +24,39 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { sidebarMenu } from '../../data/mockData';
+
+const sidebarMenu = [
+  {
+    group: 'Tổng quan',
+    items: [
+      { id: 'dashboard', label: 'Bảng điều khiển', icon: 'LayoutDashboard', path: '/' },
+    ],
+  },
+  {
+    group: 'Quản lý',
+    items: [
+      { id: 'leads', label: 'Quản lý Lead', icon: 'Users', path: '/leads' },
+      { id: 'tele', label: 'Telemarketing', icon: 'Phone', path: '/tele' },
+      { id: 'routing', label: 'Routing', icon: 'GitBranch', path: '/routing' },
+      { id: 'services', label: 'Dịch vụ', icon: 'Box', path: '/services' },
+    ],
+  },
+  {
+    group: 'Giao tiếp',
+    items: [
+      { id: 'channels', label: 'Quản lý kênh', icon: 'Radio', path: '/channels' },
+      { id: 'chat', label: 'Chat đa kênh', icon: 'MessageSquare', path: '/chat' },
+    ],
+  },
+  {
+    group: 'Hệ thống',
+    items: [
+      { id: 'departments', label: 'Phòng ban', icon: 'Building2', path: '/departments' },
+      { id: 'users', label: 'Quản trị người dùng', icon: 'UserCog', path: '/users' },
+      { id: 'permissions', label: 'Phân quyền', icon: 'Shield', path: '/permissions' },
+    ],
+  },
+];
 
 const ICON_MAP = {
   LayoutDashboard,

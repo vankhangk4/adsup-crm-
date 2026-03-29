@@ -3,6 +3,7 @@ import RootLayout from './components/layout/RootLayout';
 import TeleModule from './components/tele/TeleModule';
 import RoutingModule from './components/routing/RoutingModule';
 import ServicesModule from './components/services/ServicesModule';
+import ChatModule from './components/chat/ChatModule';
 import './index.css';
 
 export default function App() {
@@ -56,7 +57,7 @@ function DashboardPage() {
 function LeadsPage() { return <div className="text-gray-500">Trang Quản lý Lead - sẽ code ở Bước 3</div>; }
 function RoutingPage() { return <RoutingModule />; }
 function ServicesPage() { return <ServicesModule />; }
-function ChatPage() { return <div className="text-gray-500">Trang Chat đa kênh - sẽ code ở Bước 3</div>; }
+function ChatPage() { return <ChatModule />; }
 function DepartmentsPage() { return <div className="text-gray-500">Trang Phòng ban - sẽ code ở Bước 3</div>; }
 function UsersPage() { return <div className="text-gray-500">Trang Quản trị người dùng - sẽ code ở Bước 3</div>; }
 function PermissionsPage() { return <div className="text-gray-500">Trang Phân quyền - sẽ code ở Bước 3</div>; }

@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import RootLayout from './components/layout/RootLayout';
+import LoginPage from './components/auth/LoginPage';
+import RegisterPage from './components/auth/RegisterPage';
 import TeleModule from './components/tele/TeleModule';
 import RoutingModule from './components/routing/RoutingModule';
 import ServicesModule from './components/services/ServicesModule';
@@ -8,13 +11,19 @@ import ChannelsModule from './components/channels/ChannelsModule';
 import UsersModule from './components/users/UsersModule';
 import ManagementLeadPage from './components/leads/ManagementLeadPage';
 import DepartmentsPageComp from './components/departments/DepartmentsPage';
-import PermissionsPage from './components/permissions/PermissionsPage';
+import PermissionsPageComp from './components/permissions/PermissionsPage';
 import './index.css';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <AuthProvider>
+        <Routes>
+        {/* Login - outside RootLayout (no sidebar/header) */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* All CRM pages - inside RootLayout (with sidebar/header) */}
         <Route element={<RootLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/leads" element={<LeadsPage />} />
@@ -24,15 +33,16 @@ export default function App() {
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/users" element={<UsersPage />} />
-          <Route path="/permissions" element={<PermissionsPageRender />} />
+          <Route path="/permissions" element={<PermissionsPage />} />
           <Route path="/tele" element={<TeleModule />} />
         </Route>
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
 
-// Placeholder pages - sẽ code chi tiết từng trang theo Bước 3
+// Placeholder pages
 function DashboardPage() {
   return (
     <div className="space-y-6">
@@ -67,4 +77,4 @@ function ChatPage() { return <ChatModule />; }
 function ChannelsPage() { return <ChannelsModule />; }
 function DepartmentsPage() { return <DepartmentsPageComp />; }
 function UsersPage() { return <UsersModule />; }
-function PermissionsPageRender() { return <PermissionsPage />; }
+function PermissionsPage() { return <PermissionsPageComp />; }

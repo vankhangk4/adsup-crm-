@@ -23,6 +23,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { sidebarMenu } from '../../data/mockData';
 
 const ICON_MAP = {
@@ -39,6 +40,7 @@ const ICON_MAP = {
 };
 
 export default function Sidebar({ isMobileOpen, onMobileClose }) {
+  const { user, logout } = useAuth();
   const [expandedGroups, setExpandedGroups] = useState(
     sidebarMenu.reduce((acc, g) => ({ ...acc, [g.group]: true }), {})
   );
@@ -172,19 +174,22 @@ export default function Sidebar({ isMobileOpen, onMobileClose }) {
             <Settings size={18} />
             <span>Cài đặt</span>
           </button>
-          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-white/50 hover:bg-white/10 hover:text-white text-sm transition-colors">
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-white/50 hover:bg-white/10 hover:text-white text-sm transition-colors"
+          >
             <LogOut size={18} />
             <span>Đăng xuất</span>
           </button>
 
-          {/* Admin User */}
+          {/* User Info */}
           <div className="flex items-center gap-3 px-3 py-2.5 mt-2 rounded-lg bg-white/5">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">AD</span>
+              <span className="text-white text-xs font-bold">{user?.name?.charAt(0) || 'A'}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">Admin</p>
-              <p className="text-white/40 text-xs truncate">admin@fpt.vn</p>
+              <p className="text-white text-sm font-medium truncate">{user?.name || 'Admin'}</p>
+              <p className="text-white/40 text-xs truncate">{user?.role || 'Super Admin'}</p>
             </div>
           </div>
         </div>

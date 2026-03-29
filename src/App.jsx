@@ -5,6 +5,10 @@ import RoutingModule from './components/routing/RoutingModule';
 import ServicesModule from './components/services/ServicesModule';
 import ChatModule from './components/chat/ChatModule';
 import ChannelsModule from './components/channels/ChannelsModule';
+import UsersModule from './components/users/UsersModule';
+import ManagementLeadPage from './components/leads/ManagementLeadPage';
+import DepartmentsPageComp from './components/departments/DepartmentsPage';
+import PermissionsPage from './components/permissions/PermissionsPage';
 import './index.css';
 
 export default function App() {
@@ -20,7 +24,7 @@ export default function App() {
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/users" element={<UsersPage />} />
-          <Route path="/permissions" element={<PermissionsPage />} />
+          <Route path="/permissions" element={<PermissionsPageRender />} />
           <Route path="/tele" element={<TeleModule />} />
         </Route>
       </Routes>
@@ -56,11 +60,11 @@ function DashboardPage() {
   );
 }
 
-function LeadsPage() { return <div className="text-gray-500">Trang Quản lý Lead - sẽ code ở Bước 3</div>; }
+function LeadsPage() { return <ManagementLeadPage />; }
 function RoutingPage() { return <RoutingModule />; }
 function ServicesPage() { return <ServicesModule />; }
 function ChatPage() { return <ChatModule />; }
 function ChannelsPage() { return <ChannelsModule />; }
-function DepartmentsPage() { return <div className="text-gray-500">Trang Phòng ban - sẽ code ở Bước 3</div>; }
-function UsersPage() { return <div className="text-gray-500">Trang Quản trị người dùng - sẽ code ở Bước 3</div>; }
-function PermissionsPage() { return <div className="text-gray-500">Trang Phân quyền - sẽ code ở Bước 3</div>; }
+function DepartmentsPage() { return <DepartmentsPageComp />; }
+function UsersPage() { return <UsersModule />; }
+function PermissionsPageRender() { return <PermissionsPage />; }

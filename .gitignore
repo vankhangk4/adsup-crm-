@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Images and Media
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+!public/*.svg
+*.webp
+
+# AI tools and Bundlers
+.claude/
+.vite/
+.env
+.env.*

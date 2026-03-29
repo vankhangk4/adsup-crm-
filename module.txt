@@ -1,0 +1,21 @@
+Hệ Sinh Thái 10 Thành Phần Backend
+
+    Thành phần 1 - Lõi Hệ Thống: Auth + User + Phân quyền nền tảng (Quản lý toàn bộ nhân sự và vai trò).
+
+    Thành phần 2 - Lõi Kênh Giao Tiếp: Quản trị Page / Nick / Kênh Chat (Gom mọi nguồn đổ về một mối).
+
+    Thành phần 3 - Lõi Tương Tác: Quản lý Hội thoại (Nơi team Page làm việc trực tiếp với khách).
+
+    Thành phần 4 - Lõi Dữ Liệu: CRM Core (Chuyển hóa khách hàng và hội thoại thành Lead).
+
+    Thành phần 5 - Lõi Dịch Vụ: Quản trị Dịch vụ (Phân loại nhóm sản phẩm/dịch vụ khách quan tâm).
+
+    Thành phần 6 - Lõi Nội Dung: Quản trị Kịch bản / Script (Kho "vũ khí" chốt sale cho cả Page và Tele).
+
+    Thành phần 7 - Lõi Điều Phối: Cấp số / Routing Lead (Bộ não tự động chia việc từ Page sang Tele).
+
+    Thành phần 8 - Lõi Chăm Sóc: Tele Module (Nơi team Tele nhận số, gọi, note và chốt lịch).
+
+    Thành phần 9 - Lõi Bảo Mật Data: Phân quyền nâng cao (Đảm bảo ai ở dự án/dịch vụ nào chỉ thấy data của nơi đó).
+
+    Thành phần 10 - Lõi Mở Rộng: System Admin & AI Ready (Lưu vết hệ thống và cổng chờ cắm AI Agent).

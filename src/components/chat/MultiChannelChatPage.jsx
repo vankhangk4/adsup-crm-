@@ -136,7 +136,7 @@ export default function MultiChannelChatPage() {
   // ============================================================
 
   return (
-    <div className="h-[calc(100vh-140px)] overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+    <div className="font-sans h-[calc(100vh-140px)] overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
       <div className="grid h-full grid-cols-12 gap-4 p-4">
 
         {/* ===== CỘT 1: HỘI THOẠI ĐA KÊNH ===== */}

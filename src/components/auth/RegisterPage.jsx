@@ -47,7 +47,7 @@ function CRMIllustration() {
               <span className="text-blue-200">Tuyệt vời hơn</span>
             </h2>
             <p className="text-white/70 text-sm max-w-sm mx-auto">
-              Tạo tài khoản FPT CRM và quản lý Lead ngay hôm nay
+              Tạo tài khoản CRM CRM và quản lý Lead ngay hôm nay
             </p>
           </div>
 
@@ -97,16 +97,14 @@ function PasswordStrength({ password }) {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-              strength > i ? colors[strength] : 'bg-gray-200'
-            }`}
+            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${strength > i ? colors[strength] : 'bg-gray-200'
+              }`}
           />
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <p className={`text-[10px] font-medium ${
-          strength === 0 ? 'text-gray-400' : strength === 1 ? 'text-red-500' : strength === 2 ? 'text-amber-500' : strength === 3 ? 'text-blue-500' : 'text-green-500'
-        }`}>
+        <p className={`text-[10px] font-medium ${strength === 0 ? 'text-gray-400' : strength === 1 ? 'text-red-500' : strength === 2 ? 'text-amber-500' : strength === 3 ? 'text-blue-500' : 'text-green-500'
+          }`}>
           {labels[strength] || 'Nhập mật khẩu'}
         </p>
         <p className="text-[10px] text-gray-400">{strength}/4 điều kiện</p>
@@ -184,12 +182,14 @@ export default function RegisterPage() {
       confirmPassword: validateConfirm,
     };
     if (validators[field]) {
-      setErrors((prev) => ({ ...prev, [field]: validators[field](
-        field === 'fullName' ? fullName :
-        field === 'email' ? email :
-        field === 'password' ? password :
-        confirmPassword
-      )}));
+      setErrors((prev) => ({
+        ...prev, [field]: validators[field](
+          field === 'fullName' ? fullName :
+            field === 'email' ? email :
+              field === 'password' ? password :
+                confirmPassword
+        )
+      }));
     }
   };
 
@@ -251,7 +251,7 @@ export default function RegisterPage() {
               <span className="text-white font-bold text-lg">F</span>
             </div>
             <div>
-              <span className="text-gray-900 font-bold text-lg">FPT CRM</span>
+              <span className="text-gray-900 font-bold text-lg">CRM CRM</span>
               <p className="text-gray-400 text-[11px] -mt-0.5">Hệ thống quản lý</p>
             </div>
           </div>
@@ -418,9 +418,8 @@ export default function RegisterPage() {
                     }}
                     className="sr-only"
                   />
-                  <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
-                    agreed ? 'bg-blue-500 border-blue-500' : 'border-gray-300 group-hover:border-blue-400'
-                  }`}>
+                  <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${agreed ? 'bg-blue-500 border-blue-500' : 'border-gray-300 group-hover:border-blue-400'
+                    }`}>
                     {agreed && <Check size={11} className="text-white" />}
                   </div>
                 </div>

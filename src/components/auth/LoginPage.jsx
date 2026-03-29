@@ -85,7 +85,7 @@ function LoginForm() {
           <span className="text-white font-bold text-lg">F</span>
         </div>
         <div>
-          <span className="text-gray-900 font-bold text-lg">FPT CRM</span>
+          <span className="text-gray-900 font-bold text-lg">CRM CRM</span>
           <p className="text-gray-400 text-[11px] -mt-0.5">Hệ thống quản lý</p>
         </div>
       </div>

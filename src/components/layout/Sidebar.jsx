@@ -79,7 +79,7 @@ export default function Sidebar({ isMobileOpen, onMobileClose }) {
             <span className="text-white font-bold text-sm">F</span>
           </div>
           <div>
-            <h1 className="text-white font-bold text-base leading-tight">FPT CRM</h1>
+            <h1 className="text-white font-bold text-base leading-tight">CRM CRM</h1>
             <p className="text-white/50 text-[10px]">Hệ thống quản lý</p>
           </div>
           <button
@@ -145,10 +145,9 @@ export default function Sidebar({ isMobileOpen, onMobileClose }) {
                         className={`
                           flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                           transition-all duration-150 group relative
-                          ${
-                            isActive
-                              ? 'bg-blue-500/20 text-blue-400 border-l-2 border-blue-400 ml-[-2px]'
-                              : 'text-white/70 hover:bg-white/10 hover:text-white'
+                          ${isActive
+                            ? 'bg-blue-500/20 text-blue-400 border-l-2 border-blue-400 ml-[-2px]'
+                            : 'text-white/70 hover:bg-white/10 hover:text-white'
                           }
                         `}
                       >

@@ -242,6 +242,7 @@ export const sidebarMenu = [
   {
     group: 'Giao tiếp',
     items: [
+      { id: 'channels', label: 'Quản lý kênh', icon: 'Radio', path: '/channels', badge: 3 },
       { id: 'chat', label: 'Chat đa kênh', icon: 'MessageSquare', path: '/chat', badge: 28 },
     ],
   },

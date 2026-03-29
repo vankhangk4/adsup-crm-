@@ -4,6 +4,7 @@ import TeleModule from './components/tele/TeleModule';
 import RoutingModule from './components/routing/RoutingModule';
 import ServicesModule from './components/services/ServicesModule';
 import ChatModule from './components/chat/ChatModule';
+import ChannelsModule from './components/channels/ChannelsModule';
 import './index.css';
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/leads" element={<LeadsPage />} />
           <Route path="/routing" element={<RoutingPage />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/channels" element={<ChannelsPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/users" element={<UsersPage />} />
@@ -58,6 +60,7 @@ function LeadsPage() { return <div className="text-gray-500">Trang Quản lý Le
 function RoutingPage() { return <RoutingModule />; }
 function ServicesPage() { return <ServicesModule />; }
 function ChatPage() { return <ChatModule />; }
+function ChannelsPage() { return <ChannelsModule />; }
 function DepartmentsPage() { return <div className="text-gray-500">Trang Phòng ban - sẽ code ở Bước 3</div>; }
 function UsersPage() { return <div className="text-gray-500">Trang Quản trị người dùng - sẽ code ở Bước 3</div>; }
 function PermissionsPage() { return <div className="text-gray-500">Trang Phân quyền - sẽ code ở Bước 3</div>; }

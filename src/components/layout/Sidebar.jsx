@@ -14,6 +14,7 @@ import {
   UserCog,
   Shield,
   Phone,
+  Radio,
   ChevronDown,
   ChevronRight,
   Bell,
@@ -34,6 +35,7 @@ const ICON_MAP = {
   UserCog,
   Shield,
   Phone,
+  Radio,
 };
 
 export default function Sidebar({ isMobileOpen, onMobileClose }) {

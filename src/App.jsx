@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import RootLayout from './components/layout/RootLayout';
 import TeleModule from './components/tele/TeleModule';
+import RoutingModule from './components/routing/RoutingModule';
 import './index.css';
 
 export default function App() {
@@ -52,7 +53,7 @@ function DashboardPage() {
 }
 
 function LeadsPage() { return <div className="text-gray-500">Trang Quản lý Lead - sẽ code ở Bước 3</div>; }
-function RoutingPage() { return <div className="text-gray-500">Trang Routing - sẽ code ở Bước 3</div>; }
+function RoutingPage() { return <RoutingModule />; }
 function ServicesPage() { return <div className="text-gray-500">Trang Dịch vụ - sẽ code ở Bước 3</div>; }
 function ChatPage() { return <div className="text-gray-500">Trang Chat đa kênh - sẽ code ở Bước 3</div>; }
 function DepartmentsPage() { return <div className="text-gray-500">Trang Phòng ban - sẽ code ở Bước 3</div>; }

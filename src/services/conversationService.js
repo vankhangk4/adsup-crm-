@@ -5,7 +5,12 @@ import { get, post, patch } from './api';
 
 export async function listConversations(params = {}) {
   const res = await get('/conversations', params);
-  return res.data;
+  // Backend wraps: { success, data: { items, pagination } }
+  // Axios interceptor returns res.data, so res = { success, data: { items } }
+  console.log('[conversationService] raw res:', res);
+  console.log('[conversationService] res.data:', res?.data);
+  console.log('[conversationService] res.data?.items:', res?.data?.items);
+  return res?.data?.items || res?.data || res || [];
 }
 
 export async function getConversation(convId) {
@@ -25,7 +30,8 @@ export async function updateConversation(convId, data) {
 
 export async function listMessages(convId, params = {}) {
   const res = await get(`/conversations/${convId}/messages`, params);
-  return res.data;
+  console.log('[listMessages] res:', res);
+  return res?.data?.items || res?.data || res || [];
 }
 
 export async function sendMessage(convId, messageText, senderType = 'page_staff') {

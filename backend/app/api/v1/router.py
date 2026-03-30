@@ -15,6 +15,8 @@ from app.api.v1.tele import router as tele_router, followup_router, appointment_
 from app.api.v1.routing import router as routing_router
 from app.api.v1.scripts import router as scripts_router
 from app.api.v1.settings import router as settings_router
+from app.api.v1.webhook import router as webhook_router
+from app.api.v1.ws import router as ws_router
 
 router = APIRouter()
 
@@ -36,3 +38,5 @@ router.include_router(appointment_router)
 router.include_router(routing_router)
 router.include_router(scripts_router)
 router.include_router(settings_router)
+router.include_router(webhook_router)
+router.include_router(ws_router)

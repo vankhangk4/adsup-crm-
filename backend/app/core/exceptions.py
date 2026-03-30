@@ -23,6 +23,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    # Don't intercept WebSocket exceptions — let FastAPI handle them
+    if hasattr(exc, '__class__') and 'WebSocket' in exc.__class__.__name__:
+        raise exc
     logger.exception(f"Unhandled exception at {request.url}: {exc}")
     return JSONResponse(
         status_code=500,

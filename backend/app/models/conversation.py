@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from app.models.message import Message
     from app.models.conversation_tag import ConversationTag
     from app.models.conversation_assignment import ConversationAssignment
+    from app.models.channel import Channel
+    from app.models.customer import Customer
 
 
 class Conversation(SoftDeleteMixin, BaseModel):
@@ -21,13 +23,19 @@ class Conversation(SoftDeleteMixin, BaseModel):
         Index("ix_conversations_assigned_page_user_id", "assigned_page_user_id"),
         Index("ix_conversations_status", "conversation_status"),
         Index("ix_conversations_last_message_time", "last_message_time"),
+        Index("ix_conversations_channel_external", "channel_id", "external_customer_id"),
     )
 
+    # Channel reference for multi-channel conversations
+    channel_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("channels.id"), nullable=True)
     page_id: Mapped[int] = mapped_column(Integer, ForeignKey("pages.id"), nullable=False)
     page_account_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("page_accounts.id"), nullable=True)
+
+    # External identity
     external_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     customer_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     customer_avatar: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
     assigned_page_user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     conversation_status: Mapped[str] = mapped_column(String(50), default="open", nullable=False)
     last_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -39,6 +47,7 @@ class Conversation(SoftDeleteMixin, BaseModel):
     internal_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
+    channel: Mapped[Optional["Channel"]] = relationship("Channel", foreign_keys=[channel_id])
     page: Mapped[Optional["Page"]] = relationship("Page")
     page_account: Mapped[Optional["PageAccount"]] = relationship("PageAccount")
     assigned_user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assigned_page_user_id])

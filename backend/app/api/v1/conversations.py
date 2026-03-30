@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import Optional, List
 from pydantic import BaseModel as PydanticBase
 
@@ -72,6 +72,8 @@ def _conv_dict(c: Conversation) -> dict:
     return {
         "id": c.id,
         "page_id": c.page_id,
+        "channel_id": c.channel_id,
+        "channel_code": c.channel.code if c.channel else None,
         "page_account_id": c.page_account_id,
         "external_customer_id": c.external_customer_id,
         "customer_name": c.customer_name,
@@ -123,7 +125,7 @@ def _log_activity(db: Session, actor_id: int, action: str, target_type: str, tar
 
 
 def _get_conversation(db: Session, conv_id: int) -> Conversation:
-    conv = db.query(Conversation).filter(
+    conv = db.query(Conversation).options(joinedload(Conversation.channel)).filter(
         Conversation.id == conv_id,
         Conversation.deleted_at.is_(None),
     ).first()
@@ -161,10 +163,13 @@ def list_conversations(
     page_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
     assigned_user_id: Optional[int] = Query(None),
+    channel_code: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Conversation).filter(Conversation.deleted_at.is_(None))
+    from app.models.channel import Channel
+
+    query = db.query(Conversation).options(joinedload(Conversation.channel)).filter(Conversation.deleted_at.is_(None))
 
     # B063: scope
     if not _has_permission(db, current_user.id, "page.manage"):
@@ -184,6 +189,8 @@ def list_conversations(
         query = query.filter(Conversation.conversation_status == status)
     if assigned_user_id is not None:
         query = query.filter(Conversation.assigned_page_user_id == assigned_user_id)
+    if channel_code is not None:
+        query = query.join(Conversation.channel).filter(Channel.code == channel_code)
 
     result = paginate(query, page=page, page_size=page_size)
     result["items"] = [_conv_dict(c) for c in result["items"]]
@@ -240,6 +247,32 @@ def create_message(
     conv.last_message_time = now
     db.commit()
     db.refresh(msg)
+
+    # Send to Facebook if this is a Facebook conversation (fire-and-forget)
+    if (
+        payload.sender_type == "page_staff"
+        and conv.external_customer_id
+        and conv.channel_id
+        and conv.channel
+        and conv.channel.code == "facebook"
+    ):
+        import asyncio, concurrent.futures
+        from app.services.fb_sender import send_text_message
+
+        def _fb_send():
+            try:
+                asyncio.run(send_text_message(conv.external_customer_id, payload.message_text))
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning("FB send failed: %s", e)
+
+        try:
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            executor.submit(_fb_send)
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
+
     return success_response(data=_msg_dict(msg), message="Message created")
 
 

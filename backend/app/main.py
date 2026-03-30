@@ -12,6 +12,7 @@ from app.core.exceptions import (
     generic_exception_handler,
 )
 from app.api.v1.router import router as v1_router
+from app.api.v1.ws import router as ws_router
 
 
 @asynccontextmanager
@@ -38,6 +39,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # Routers
 app.include_router(v1_router, prefix="/api/v1")
+app.include_router(ws_router)  # WS at /ws/chat (no prefix)
 
 
 @app.get("/health")
